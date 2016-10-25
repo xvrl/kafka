@@ -342,6 +342,8 @@ public interface KStream<K, V> {
      */
     void to(Serde<K> keySerde, Serde<V> valSerde, StreamPartitioner<K, V> partitioner, String topic);
 
+    KValueStream<K, V> values();
+
     /**
      * Create a new {@link KStream} instance by applying a {@link org.apache.kafka.streams.kstream.Transformer} to all elements in this stream, one element at a time.
      *

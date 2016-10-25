@@ -23,16 +23,19 @@ import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.streams.KeyValue;
 import org.apache.kafka.streams.errors.TopologyBuilderException;
 import org.apache.kafka.streams.kstream.ForeachAction;
+import org.apache.kafka.streams.kstream.ForeachValueAction;
 import org.apache.kafka.streams.kstream.JoinWindows;
 import org.apache.kafka.streams.kstream.KGroupedStream;
 import org.apache.kafka.streams.kstream.KStream;
 import org.apache.kafka.streams.kstream.KStreamBuilder;
 import org.apache.kafka.streams.kstream.KTable;
+import org.apache.kafka.streams.kstream.KValueStream;
 import org.apache.kafka.streams.kstream.KeyValueMapper;
 import org.apache.kafka.streams.kstream.Predicate;
 import org.apache.kafka.streams.kstream.TransformerSupplier;
 import org.apache.kafka.streams.kstream.ValueJoiner;
 import org.apache.kafka.streams.kstream.ValueMapper;
+import org.apache.kafka.streams.kstream.ValuePredicate;
 import org.apache.kafka.streams.kstream.ValueTransformerSupplier;
 import org.apache.kafka.streams.processor.ProcessorSupplier;
 import org.apache.kafka.streams.processor.StateStoreSupplier;
@@ -104,6 +107,84 @@ public class KStreamImpl<K, V> extends AbstractStream<K> implements KStream<K, V
                        boolean repartitionRequired) {
         super(topology, name, sourceNodes);
         this.repartitionRequired = repartitionRequired;
+    }
+
+    @Override
+    public KValueStream<K, V> values() {
+        return new KValueStream<K, V>() {
+            @Override
+            public <V1> KValueStream<K, V1> map(final ValueMapper<V, V1> mapper) {
+                return KStreamImpl.this.mapValues(mapper).values();
+            }
+
+            @Override
+            public void foreach(final ForeachValueAction<V> action) {
+                KStreamImpl.this.foreach(new ForeachAction<K, V>() {
+                    @Override
+                    public void apply(K key, V value) {
+                        action.apply(value);
+                    }
+                });
+            }
+
+            @Override
+            public KValueStream<K, V> filter(final ValuePredicate<V> predicate) {
+                return KStreamImpl.this.filter(new Predicate<K, V>() {
+                    @Override
+                    public boolean test(K key, V value) {
+                        return predicate.test(value);
+                    }
+                }).values();
+            }
+
+            @Override
+            public KValueStream<K, V> filterNot(final ValuePredicate<V> predicate) {
+                return KStreamImpl.this.filterNot(new Predicate<K, V>() {
+                    @Override
+                    public boolean test(K key, V value) {
+                        return predicate.test(value);
+                    }
+                }).values();
+            }
+
+            @Override
+            public <V1> KValueStream<K, V1> flatMap(ValueMapper<V, Iterable<V1>> mapper) {
+                return KStreamImpl.this.flatMapValues(mapper).values();
+            }
+
+            @Override
+            public <V1> KValueStream<K, V1> transform(ValueTransformerSupplier<V, V1> valueTransformerSupplier, String... stateStoreNames) {
+                return KStreamImpl.this.transformValues(valueTransformerSupplier, stateStoreNames).values();
+            }
+
+            @Override
+            public KValueStream<K, V>[] branch(ValuePredicate<V>... predicates) {
+                @SuppressWarnings({"unchecked"})
+                Predicate<K, V> kvPredicates[] = new Predicate[predicates.length];
+                for (int i = 0; i < predicates.length; ++i) {
+                    final ValuePredicate<V> predicate = predicates[i];
+
+                    kvPredicates[i] = new Predicate<K, V>() {
+                        @Override
+                        public boolean test(K key, V value) {
+                            return predicate.test(value);
+                        }
+                    };
+                }
+                KStream<K, V>[] kvBranchChildren = KStreamImpl.this.branch(kvPredicates);
+                @SuppressWarnings({"unchecked"})
+                KValueStream<K, V>[] branchChildren = new KValueStream[kvBranchChildren.length];
+                for(int i = 0; i < kvBranchChildren.length; ++i) {
+                    branchChildren[i] = kvBranchChildren[i].values();
+                }
+                return branchChildren;
+            }
+
+            @Override
+            public KStream<K, V> entries() {
+                return KStreamImpl.this;
+            }
+        };
     }
 
     @Override
