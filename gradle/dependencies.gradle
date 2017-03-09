@@ -109,5 +109,7 @@ libs += [
   snappy: "org.xerial.snappy:snappy-java:$versions.snappy",
   zkclient: "com.101tec:zkclient:$versions.zkclient",
   zookeeper: "org.apache.zookeeper:zookeeper:$versions.zookeeper",
-  jfreechart: "jfreechart:jfreechart:$versions.jfreechart"
+  jfreechart: "jfreechart:jfreechart:$versions.jfreechart",
+  jmhCore: "org.openjdk.jmh:jmh-core:1.9.2",
+  jmhAnn: "org.openjdk.jmh:jmh-generator-annprocess:1.9.2"
 ]

@@ -19,6 +19,7 @@ package org.apache.kafka.streams.state.internals;
 import org.apache.kafka.clients.producer.MockProducer;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.common.metrics.Metrics;
+import org.apache.kafka.common.serialization.Serde;
 import org.apache.kafka.common.serialization.Serdes;
 import org.apache.kafka.common.serialization.Serializer;
 import org.apache.kafka.common.utils.Utils;
@@ -35,6 +36,15 @@ import org.apache.kafka.streams.state.WindowStoreIterator;
 import org.apache.kafka.test.MockProcessorContext;
 import org.apache.kafka.test.TestUtils;
 import org.junit.Test;
+import org.openjdk.jmh.annotations.BenchmarkMode;
+import org.openjdk.jmh.annotations.Fork;
+import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.OutputTimeUnit;
+import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
+import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.Warmup;
+import org.openjdk.jmh.infra.Blackhole;
 
 import java.io.File;
 import java.io.IOException;
@@ -46,6 +56,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -53,6 +64,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+@State(Scope.Benchmark)
 public class RocksDBWindowStoreTest {
 
     private static final long DEFAULT_CACHE_SIZE_BYTES = 1024 * 1024L;
@@ -62,6 +74,7 @@ public class RocksDBWindowStoreTest {
     private final String windowName = "window";
     private final long segmentSize = Segments.MIN_SEGMENT_INTERVAL;
     private final long retentionPeriod = segmentSize * (numSegments - 1);
+
     private final Segments segments = new Segments(windowName, retentionPeriod, numSegments);
     private final StateSerdes<Integer, String> serdes = new StateSerdes<>("", Serdes.Integer(), Serdes.String());
 
@@ -88,10 +101,13 @@ public class RocksDBWindowStoreTest {
     private final File baseDir = TestUtils.tempDirectory("test");
     private final MockProcessorContext context = new MockProcessorContext(baseDir, Serdes.ByteArray(), Serdes.ByteArray(), recordCollector, cache);
 
-    @SuppressWarnings("unchecked")
-    private <K, V> WindowStore<K, V> createWindowStore(ProcessorContext context, final boolean enableCaching, final boolean retainDuplicates) {
-        final RocksDBWindowStoreSupplier supplier = new RocksDBWindowStoreSupplier<>(windowName, retentionPeriod, numSegments, retainDuplicates, Serdes.Integer(), Serdes.String(), windowSize, true, Collections.<String, String>emptyMap(), enableCaching);
-        final WindowStore<K, V> store = (WindowStore<K, V>) supplier.get();
+    private WindowStore<Integer, String> createWindowStore(ProcessorContext context, final boolean enableCaching, final boolean retainDuplicates) {
+        return createWindowStore(context, Serdes.Integer(), Serdes.String(), enableCaching, retainDuplicates);
+    }
+
+    private <K, V> WindowStore<K, V> createWindowStore(ProcessorContext context, Serde<K> keySerde, Serde<V> valueSerde, final boolean enableCaching, final boolean retainDuplicates) {
+        final RocksDBWindowStoreSupplier<K, V> supplier = new RocksDBWindowStoreSupplier<>(windowName, retentionPeriod, numSegments, retainDuplicates, keySerde, valueSerde, windowSize, true, Collections.<String, String>emptyMap(), enableCaching);
+        final WindowStore<K, V> store = supplier.get();
         store.init(context, store);
         return store;
     }
@@ -126,6 +142,31 @@ public class RocksDBWindowStoreTest {
 
     private ProcessorRecordContext createRecordContext(final long time) {
         return new ProcessorRecordContext(time, 0, 0, "topic");
+    }
+
+    private WindowStore<String, String> benchStore;
+
+    @Setup
+    public void setupBenchmark() {
+        benchStore = createWindowStore(context, Serdes.String(), Serdes.String(), false, true);
+//        context.setRecordContext(createRecordContext(0x7a00000000000000L));
+        context.setRecordContext(createRecordContext(1489080540000L));
+        benchStore.put("a", "0001");
+        benchStore.put("aa", "0002");
+        benchStore.put("a", "0003");
+        benchStore.put("aa", "0004");
+    }
+
+    @Fork(value = 1)
+    @Warmup(iterations = 5)
+    @org.openjdk.jmh.annotations.Benchmark
+    @BenchmarkMode({Mode.AverageTime})
+    @OutputTimeUnit(TimeUnit.MILLISECONDS)
+    public void benchmarkStoreFetch(Blackhole blackhole) {
+        final WindowStoreIterator<String> iterator = benchStore.fetch("a", 0, Long.MAX_VALUE);
+        while (iterator.hasNext()) {
+            blackhole.consume(iterator.next());
+        }
     }
 
     @Test
