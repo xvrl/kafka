@@ -47,8 +47,8 @@ public final class KafkaLZ4BlockInputStream extends FilterInputStream {
     public static final String BLOCK_HASH_MISMATCH = "Block checksum mismatch";
     public static final String DESCRIPTOR_HASH_MISMATCH = "Stream frame descriptor corrupted";
 
-    private final LZ4SafeDecompressor decompressor;
-    private final XXHash32 checksum;
+    private static final LZ4SafeDecompressor DECOMPRESSOR = LZ4Factory.fastestInstance().safeDecompressor();
+    private static final XXHash32 CHECKSUM = XXHashFactory.fastestInstance().hash32();
     private final byte[] buffer;
     private final byte[] compressedBuffer;
     private final int maxBlockSize;
@@ -68,8 +68,6 @@ public final class KafkaLZ4BlockInputStream extends FilterInputStream {
      */
     public KafkaLZ4BlockInputStream(InputStream in, boolean ignoreFlagDescriptorChecksum) throws IOException {
         super(in);
-        decompressor = LZ4Factory.fastestInstance().safeDecompressor();
-        checksum = XXHashFactory.fastestInstance().hash32();
         this.ignoreFlagDescriptorChecksum = ignoreFlagDescriptorChecksum;
         readHeader();
         maxBlockSize = bd.getBlockMaximumSize();
@@ -134,7 +132,7 @@ public final class KafkaLZ4BlockInputStream extends FilterInputStream {
 
         int offset = 4;
         int len = headerOffset - offset - 1; // dont include magic bytes or HC
-        byte hash = (byte) ((checksum.hash(header, offset, len, 0) >> 8) & 0xFF);
+        byte hash = (byte) ((CHECKSUM.hash(header, offset, len, 0) >> 8) & 0xFF);
         if (hash != header[headerOffset - 1])
             throw new IOException(DESCRIPTOR_HASH_MISMATCH);
     }
@@ -173,13 +171,13 @@ public final class KafkaLZ4BlockInputStream extends FilterInputStream {
         }
 
         // verify checksum
-        if (flg.isBlockChecksumSet() && Utils.readUnsignedIntLE(in) != checksum.hash(bufferToRead, 0, blockSize, 0)) {
+        if (flg.isBlockChecksumSet() && Utils.readUnsignedIntLE(in) != CHECKSUM.hash(bufferToRead, 0, blockSize, 0)) {
             throw new IOException(BLOCK_HASH_MISMATCH);
         }
 
         if (compressed) {
             try {
-                bufferSize = decompressor.decompress(compressedBuffer, 0, blockSize, buffer, 0, maxBlockSize);
+                bufferSize = DECOMPRESSOR.decompress(compressedBuffer, 0, blockSize, buffer, 0, maxBlockSize);
             } catch (LZ4Exception e) {
                 throw new IOException(e);
             }
