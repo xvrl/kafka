@@ -81,7 +81,7 @@ public class MemoryRecordsBuilder {
         @Override
         public Constructor get() throws ClassNotFoundException, NoSuchMethodException {
             return Class.forName("org.apache.kafka.common.record.KafkaLZ4BlockInputStream")
-                .getConstructor(InputStream.class, Boolean.TYPE);
+                .getConstructor(ByteBuffer.class, Boolean.TYPE);
         }
     });
 
@@ -426,16 +426,16 @@ public class MemoryRecordsBuilder {
         }
     }
 
-    public static DataInputStream wrapForInput(ByteBufferInputStream buffer, CompressionType type, byte messageVersion) {
+    public static DataInputStream wrapForInput(ByteBuffer buffer, CompressionType type, byte messageVersion) {
         try {
             switch (type) {
                 case NONE:
-                    return buffer;
+                    return new ByteBufferInputStream(buffer);
                 case GZIP:
-                    return new DataInputStream(new GZIPInputStream(buffer));
+                    return new DataInputStream(new GZIPInputStream(new ByteBufferInputStream(buffer)));
                 case SNAPPY:
                     try {
-                        InputStream stream = (InputStream) snappyInputStreamSupplier.get().newInstance(buffer);
+                        InputStream stream = (InputStream) snappyInputStreamSupplier.get().newInstance(new ByteBufferInputStream(buffer));
                         return new DataInputStream(stream);
                     } catch (Exception e) {
                         throw new KafkaException(e);

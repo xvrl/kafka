@@ -110,4 +110,13 @@ public class DeepRecordsIteratorBenchmark {
       )), false, Integer.MAX_VALUE));
     }
   }
+
+  public static void main(String[] args) {
+    final DeepRecordsIteratorBenchmark
+        benchmark =
+        new DeepRecordsIteratorBenchmark();
+
+    benchmark.init();
+    benchmark.measureSingleMessage();
+  }
 }

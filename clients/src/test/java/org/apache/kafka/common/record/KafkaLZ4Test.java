@@ -23,6 +23,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -139,9 +140,8 @@ public class KafkaLZ4Test {
             assertEquals(0, compressed[offset++]);
         }
 
-        ByteArrayInputStream input = new ByteArrayInputStream(compressed);
         try {
-            KafkaLZ4BlockInputStream decompressed = new KafkaLZ4BlockInputStream(input, this.ignoreFlagDescriptorChecksum);
+            KafkaLZ4BlockInputStream decompressed = new KafkaLZ4BlockInputStream(ByteBuffer.wrap(compressed), this.ignoreFlagDescriptorChecksum);
             byte[] testPayload = new byte[this.payload.length];
             int ret = decompressed.read(testPayload, 0, this.payload.length);
             assertEquals(ret, this.payload.length);
