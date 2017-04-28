@@ -1,6 +1,7 @@
 package org.apache.kafka.common.record;
 
 import org.apache.kafka.common.record.RecordsIterator.DeepRecordsIterator;
+import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.OperationsPerInvocation;
 import org.openjdk.jmh.annotations.Param;
@@ -22,6 +23,9 @@ public class DeepRecordsIteratorBenchmark {
   final int BATCH_COUNT = 5000;
 
   private int maxBatchSize = 10;
+
+  @Param(value = {"LZ4", "SNAPPY", "NONE"})
+  private CompressionType compressionType = CompressionType.LZ4;
 
   @Param(value = {"100", "1000", "10000", "100000"})
   private int messageSize = 100;
@@ -59,8 +63,8 @@ public class DeepRecordsIteratorBenchmark {
     ByteBuffer theBuffer = ByteBuffer.allocate(recordSize * batchSize + 1024);
 
     final DataOutputStream dataOutputStream = MemoryRecordsBuilder.wrapForOutput(
-        new ByteBufferOutputStream(theBuffer), CompressionType.LZ4,
-        Record.MAGIC_VALUE_V1, -1
+        new ByteBufferOutputStream(theBuffer), compressionType,
+        Record.MAGIC_VALUE_V1, 1 << 13
     );
 
     try {
@@ -79,13 +83,13 @@ public class DeepRecordsIteratorBenchmark {
   @Fork(value = 1)
   @Warmup(iterations = 5)
   @org.openjdk.jmh.annotations.Benchmark
-  public DeepRecordsIterator measureSingleMessageLZ4() {
+  public DeepRecordsIterator measureSingleMessage() {
     return new DeepRecordsIterator(LogEntry.create(0, Record.create(
         Record.MAGIC_VALUE_V1,
         1,
         new byte[]{},
         theData,
-        CompressionType.LZ4,
+        compressionType,
         TimestampType.NO_TIMESTAMP_TYPE
     )), false, Integer.MAX_VALUE);
   }
@@ -93,15 +97,15 @@ public class DeepRecordsIteratorBenchmark {
   @Fork(value = 1)
   @Warmup(iterations = 5)
   @OperationsPerInvocation(value = BATCH_COUNT)
-  @org.openjdk.jmh.annotations.Benchmark
-  public void measureVariableSizeLZ4(Blackhole bh) {
+  @Benchmark
+  public void measureVariableBatchSize(Blackhole bh) {
     for (int i = 0; i < BATCH_COUNT; ++i) {
       bh.consume(new DeepRecordsIterator(LogEntry.create(0, Record.create(
           Record.MAGIC_VALUE_V1,
           batchSize[i],
           new byte[]{},
           batch[i],
-          CompressionType.LZ4,
+          compressionType,
           TimestampType.NO_TIMESTAMP_TYPE
       )), false, Integer.MAX_VALUE));
     }
