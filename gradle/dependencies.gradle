@@ -46,7 +46,7 @@ versions += [
   snappy: "1.1.2.6",
   zkclient: "0.10",
   zookeeper: "3.4.9",
-  jfreechart: "1.0.0",
+  jfreechart: "1.0.0"
 ]
 
 // Add Scala version
@@ -109,5 +109,7 @@ libs += [
   snappy: "org.xerial.snappy:snappy-java:$versions.snappy",
   zkclient: "com.101tec:zkclient:$versions.zkclient",
   zookeeper: "org.apache.zookeeper:zookeeper:$versions.zookeeper",
-  jfreechart: "jfreechart:jfreechart:$versions.jfreechart"
+  jfreechart: "jfreechart:jfreechart:$versions.jfreechart",
+  jmhCore: "org.openjdk.jmh:jmh-core:1.9.2",
+  jmhAnn: "org.openjdk.jmh:jmh-generator-annprocess:1.9.2"
 ]

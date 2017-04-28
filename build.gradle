@@ -416,6 +416,8 @@ project(':core') {
     testCompile libs.junit
     testCompile libs.scalaTest
     testCompile libs.jfreechart
+    testCompile libs.jmhCore
+    testCompile libs.jmhAnn
 
     scoverage libs.scoveragePlugin
     scoverage libs.scoverageRuntime
@@ -599,6 +601,8 @@ project(':clients') {
     testCompile libs.easymock
     testCompile libs.powermock
     testCompile libs.powermockEasymock
+    testCompile libs.jmhCore
+    testCompile libs.jmhAnn
 
     testRuntime libs.slf4jlog4j
   }

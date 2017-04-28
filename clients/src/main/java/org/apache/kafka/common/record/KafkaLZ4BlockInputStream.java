@@ -24,9 +24,13 @@ import static org.apache.kafka.common.record.KafkaLZ4BlockOutputStream.MAGIC;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
 
+import org.apache.kafka.clients.producer.internals.BufferPool;
+import org.apache.kafka.common.metrics.Metrics;
 import org.apache.kafka.common.record.KafkaLZ4BlockOutputStream.BD;
 import org.apache.kafka.common.record.KafkaLZ4BlockOutputStream.FLG;
+import org.apache.kafka.common.utils.Time;
 import org.apache.kafka.common.utils.Utils;
 
 import net.jpountz.lz4.LZ4Exception;
@@ -38,7 +42,7 @@ import net.jpountz.xxhash.XXHashFactory;
 /**
  * A partial implementation of the v1.5.1 LZ4 Frame format.
  *
- * @see <a href="http://cyan4973.github.io/lz4/lz4_Frame_format.html">LZ4 Frame Format</a>
+ * @see <a href="https://github.com/lz4/lz4/wiki/lz4_Frame_format.md">LZ4 Frame Format</a>
  */
 public final class KafkaLZ4BlockInputStream extends FilterInputStream {
 
@@ -49,8 +53,12 @@ public final class KafkaLZ4BlockInputStream extends FilterInputStream {
 
     private static final LZ4SafeDecompressor DECOMPRESSOR = LZ4Factory.fastestInstance().safeDecompressor();
     private static final XXHash32 CHECKSUM = XXHashFactory.fastestInstance().hash32();
+    private static final BufferPool FREE = new BufferPool(1024 * 1024, 1 << 16, new Metrics(),
+                                                          Time.SYSTEM, "lz4-buffer-pool");
     private final byte[] buffer;
     private final byte[] compressedBuffer;
+    private final ByteBuffer _buffer;
+    private final ByteBuffer _compressedBuffer;
     private final int maxBlockSize;
     private final boolean ignoreFlagDescriptorChecksum;
     private FLG flg;
@@ -71,8 +79,18 @@ public final class KafkaLZ4BlockInputStream extends FilterInputStream {
         this.ignoreFlagDescriptorChecksum = ignoreFlagDescriptorChecksum;
         readHeader();
         maxBlockSize = bd.getBlockMaximumSize();
-        buffer = new byte[maxBlockSize];
-        compressedBuffer = new byte[maxBlockSize];
+
+        try {
+            _buffer = FREE.allocate(maxBlockSize, 1000);
+            _compressedBuffer = FREE.allocate(maxBlockSize, 1000);
+            buffer = _buffer.array();
+            compressedBuffer = _compressedBuffer.array();
+        } catch(InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+
+//        buffer = new byte[maxBlockSize];
+//        compressedBuffer = new byte[maxBlockSize];;
         bufferOffset = 0;
         bufferSize = 0;
         finished = false;
@@ -243,6 +261,8 @@ public final class KafkaLZ4BlockInputStream extends FilterInputStream {
     @Override
     public void close() throws IOException {
         in.close();
+        FREE.deallocate(_buffer);
+        FREE.deallocate(_compressedBuffer);
     }
 
     @Override
