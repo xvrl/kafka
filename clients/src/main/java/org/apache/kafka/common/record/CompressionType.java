@@ -87,7 +87,7 @@ public enum CompressionType {
     },
 
     LZ4(3, "lz4", 0.5f) {
-        private final ThreadLocal<KafkaLZ4BlockInputStream.BufferSupplier> bufferSupplier =
+        transient private final ThreadLocal<KafkaLZ4BlockInputStream.BufferSupplier> bufferSupplier =
             new ThreadLocal<KafkaLZ4BlockInputStream.BufferSupplier>() {
                 @Override
                 protected KafkaLZ4BlockInputStream.BufferSupplier initialValue() {

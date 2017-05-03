@@ -60,7 +60,7 @@ public final class KafkaLZ4BlockInputStream extends InputStream {
 
     private final ByteBuffer in;
 
-    private ByteBuffer _buffer;
+    private ByteBuffer theBuffer;
     private final ByteBuffer decompressionBuffer;
     private final int maxBlockSize;
     private final boolean ignoreFlagDescriptorChecksum;
@@ -194,13 +194,13 @@ public final class KafkaLZ4BlockInputStream extends InputStream {
                 }
                 decompressionBuffer.position(0);
                 decompressionBuffer.limit(bufferSize);
-                _buffer = decompressionBuffer;
+                theBuffer = decompressionBuffer;
             } catch (LZ4Exception e) {
                 throw new IOException(e);
             }
         } else {
-            _buffer = in.slice();
-            _buffer.limit(blockSize);
+            theBuffer = in.slice();
+            theBuffer.limit(blockSize);
         }
 
         int offset = in.position() + blockSize;
@@ -232,7 +232,7 @@ public final class KafkaLZ4BlockInputStream extends InputStream {
             return -1;
         }
 
-        return _buffer.get() & 0xFF;
+        return theBuffer.get() & 0xFF;
     }
 
     @Override
@@ -249,7 +249,7 @@ public final class KafkaLZ4BlockInputStream extends InputStream {
         }
         len = Math.min(len, available());
 
-        _buffer.get(b, off, len);
+        theBuffer.get(b, off, len);
         return len;
     }
 
@@ -265,13 +265,13 @@ public final class KafkaLZ4BlockInputStream extends InputStream {
             return 0;
         }
         int skipped = (int) Math.min(n, available());
-        _buffer.position(_buffer.position() + skipped);
+        theBuffer.position(theBuffer.position() + skipped);
         return skipped;
     }
 
     @Override
     public int available() throws IOException {
-        return _buffer == null ? 0 : _buffer.remaining();
+        return theBuffer == null ? 0 : theBuffer.remaining();
     }
 
     @Override

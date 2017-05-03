@@ -51,7 +51,7 @@ public class KafkaLZ4Test {
     private final byte[] payload;
     private final boolean close;
     private final boolean blockChecksum;
-    private final static Random rand = new Random(0);
+    private final static Random RANDOM = new Random(0);
 
     static class Payload {
         String name;
@@ -83,11 +83,11 @@ public class KafkaLZ4Test {
 
         for (int size : Arrays.asList(1000, 1 << 16, (1 << 10) * 96)) {
             byte[] random = new byte[size];
-            rand.nextBytes(random);
+            RANDOM.nextBytes(random);
             payloads.add(new Payload("random", random));
 
             byte[] ones = new byte[size];
-            Arrays.fill(ones, (byte)1);
+            Arrays.fill(ones, (byte) 1);
             payloads.add(new Payload("ones", ones));
         }
 
@@ -313,7 +313,8 @@ public class KafkaLZ4Test {
         long skipped = in.skip(n);
         assertEquals(Math.min(n, remaining), skipped);
 
-        n = 10000; remaining -= skipped;
+        n = 10000;
+        remaining -= skipped;
         skipped = in.skip(n);
         assertEquals(Math.min(n, remaining), skipped);
     }
@@ -345,12 +346,10 @@ public class KafkaLZ4Test {
             if (!ignoreFlagDescriptorChecksum && useBrokenFlagDescriptorChecksum) {
                 assertEquals(KafkaLZ4BlockInputStream.DESCRIPTOR_HASH_MISMATCH, e.getMessage());
                 error = e;
-            }
-            else if (!close) {
+            } else if (!close) {
                 assertEquals(KafkaLZ4BlockInputStream.PREMATURE_EOS, e.getMessage());
                 error = e;
-            }
-            else {
+            } else {
                 throw e;
             }
         }
