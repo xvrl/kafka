@@ -50,6 +50,9 @@
     <allow pkg="org.apache.kafka.common.internals" exact-match="true" />
     <allow pkg="org.apache.kafka.test" />
 
+    <allow pkg="org.openjdk.jmh.annotations" />
+    <allow pkg="org.openjdk.jmh.infra" />
+
     <subpackage name="config">
       <allow pkg="org.apache.kafka.common.config" />
       <!-- for testing -->
