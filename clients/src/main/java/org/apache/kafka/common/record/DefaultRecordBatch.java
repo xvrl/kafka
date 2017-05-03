@@ -210,8 +210,7 @@ public class DefaultRecordBatch extends AbstractRecordBatch implements MutableRe
     private CloseableIterator<Record> compressedIterator() {
         ByteBuffer buffer = this.buffer.duplicate();
         buffer.position(RECORDS_OFFSET);
-        final DataInputStream stream = new DataInputStream(compressionType().wrapForInput(
-                new ByteBufferInputStream(buffer), magic()));
+        final DataInputStream stream = new DataInputStream(compressionType().wrapForInput(buffer, magic()));
 
         return new RecordIterator() {
             @Override

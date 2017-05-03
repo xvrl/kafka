@@ -37,7 +37,7 @@ public class CompressionTypeTest {
         buffer.rewind();
 
         KafkaLZ4BlockInputStream in = (KafkaLZ4BlockInputStream) CompressionType.LZ4.wrapForInput(
-                new ByteBufferInputStream(buffer), RecordBatch.MAGIC_VALUE_V0);
+                buffer, RecordBatch.MAGIC_VALUE_V0);
         assertTrue(in.ignoreFlagDescriptorChecksum());
     }
 
@@ -51,7 +51,7 @@ public class CompressionTypeTest {
         buffer.rewind();
 
         KafkaLZ4BlockInputStream in = (KafkaLZ4BlockInputStream) CompressionType.LZ4.wrapForInput(
-                new ByteBufferInputStream(buffer), RecordBatch.MAGIC_VALUE_V1);
+                buffer, RecordBatch.MAGIC_VALUE_V1);
         assertFalse(in.ignoreFlagDescriptorChecksum());
     }
 }

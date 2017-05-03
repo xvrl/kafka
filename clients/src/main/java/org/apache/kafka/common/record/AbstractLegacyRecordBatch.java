@@ -306,8 +306,7 @@ public abstract class AbstractLegacyRecordBatch extends AbstractRecordBatch impl
                 throw new InvalidRecordException("Found invalid compressed record set with null value (magic = " +
                         wrapperMagic + ")");
 
-            DataInputStream stream = new DataInputStream(compressionType.wrapForInput(
-                    new ByteBufferInputStream(wrapperValue), wrapperRecord.magic()));
+            DataInputStream stream = new DataInputStream(compressionType.wrapForInput(wrapperValue, wrapperRecord.magic()));
             LogInputStream<AbstractLegacyRecordBatch> logStream = new DataLogInputStream(stream, maxMessageSize);
 
             long wrapperRecordOffset = wrapperEntry.lastOffset();
