@@ -16,6 +16,7 @@
  */
 package org.apache.kafka.common.record;
 
+import org.apache.kafka.common.header.Header;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.OperationsPerInvocation;
@@ -31,25 +32,24 @@ import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Random;
 
-import static org.apache.kafka.common.record.RecordBatch.MAGIC_VALUE_V1;
+import static org.apache.kafka.common.record.RecordBatch.CURRENT_MAGIC_VALUE;
 
 @State(Scope.Benchmark)
-public class DeepRecordsIteratorBenchmark {
+public class RecordBatchIterationBenchmark {
 
     final Random random = new Random(0);
     final int batchCount = 5000;
-
-    private int maxBatchSize = 10;
+    final int maxBatchSize = 10;
 
     public enum Bytes {
         RANDOM, ONES
     }
 
-    @Param(value = {"LZ4", "SNAPPY"})
+    @Param(value = {"LZ4", "SNAPPY", "NONE"})
     private CompressionType type = CompressionType.NONE;
 
     @Param(value = {"1", "2"})
-    byte messageVersion = MAGIC_VALUE_V1;
+    private byte messageVersion = CURRENT_MAGIC_VALUE;
 
     @Param(value = {"100", "1000", "10000", "100000"})
     private int messageSize = 100;
@@ -62,25 +62,25 @@ public class DeepRecordsIteratorBenchmark {
 
     ByteBuffer theBuffer;
 
-    ByteBuffer[] batch;
+    ByteBuffer[] batches;
     int[] batchSize;
 
     @Setup
     public void init() {
         theBuffer = createBatch(1);
 
-        batch = new ByteBuffer[batchCount];
+        batches = new ByteBuffer[batchCount];
         batchSize = new int[batchCount];
         for (int i = 0; i < batchCount; ++i) {
             int size = random.nextInt(maxBatchSize) + 1;
-            batch[i] = createBatch(size);
+            batches[i] = createBatch(size);
             this.batchSize[i] = size;
         }
     }
 
     private ByteBuffer createBatch(int batchSize) {
         byte[] value = new byte[messageSize];
-        final ByteBuffer buf = ByteBuffer.allocate((messageSize + 8 + 4) * batchSize);
+        final ByteBuffer buf = ByteBuffer.allocate(AbstractRecords.sizeInBytesUpperBound(messageVersion, new byte[]{}, value, new Header[]{}));
 
         final MemoryRecordsBuilder builder =
             MemoryRecords.builder(buf, messageVersion, type, TimestampType.CREATE_TIME, startingOffset);
@@ -104,8 +104,10 @@ public class DeepRecordsIteratorBenchmark {
     @Warmup(iterations = 5)
     @Benchmark
     public void measureSingleMessage(Blackhole bh) throws IOException {
-        for (Record record : new ByteBufferLogInputStream(theBuffer.duplicate(), Integer.MAX_VALUE).nextBatch()) {
-            bh.consume(record);
+        for (RecordBatch batch : MemoryRecords.readableRecords(theBuffer.duplicate()).batches()) {
+            for (Record record : batch) {
+                bh.consume(record);
+            }
         }
     }
 
@@ -115,8 +117,10 @@ public class DeepRecordsIteratorBenchmark {
     @Benchmark
     public void measureVariableBatchSize(Blackhole bh) throws IOException {
         for (int i = 0; i < batchCount; ++i) {
-            for (Record record : new ByteBufferLogInputStream(batch[i].duplicate(), Integer.MAX_VALUE).nextBatch()) {
-                bh.consume(record);
+            for (RecordBatch batch : MemoryRecords.readableRecords(batches[i].duplicate()).batches()) {
+                for (Record record : batch) {
+                    bh.consume(record);
+                }
             }
         }
     }

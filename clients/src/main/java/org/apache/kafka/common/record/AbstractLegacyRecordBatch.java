@@ -290,12 +290,12 @@ public abstract class AbstractLegacyRecordBatch extends AbstractRecordBatch impl
         }
     }
 
-    protected static class DeepRecordsIterator extends AbstractIterator<Record> implements CloseableIterator<Record> {
+    private static class DeepRecordsIterator extends AbstractIterator<Record> implements CloseableIterator<Record> {
         private final ArrayDeque<AbstractLegacyRecordBatch> batches;
         private final long absoluteBaseOffset;
         private final byte wrapperMagic;
 
-        protected DeepRecordsIterator(AbstractLegacyRecordBatch wrapperEntry, boolean ensureMatchingMagic, int maxMessageSize) {
+        private DeepRecordsIterator(AbstractLegacyRecordBatch wrapperEntry, boolean ensureMatchingMagic, int maxMessageSize) {
             LegacyRecord wrapperRecord = wrapperEntry.outerRecord();
             this.wrapperMagic = wrapperRecord.magic();
 
