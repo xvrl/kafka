@@ -14,9 +14,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.kafka.common.record;
+package org.apache.kafka.jmh.record;
 
 import org.apache.kafka.common.header.Header;
+import org.apache.kafka.common.record.AbstractRecords;
+import org.apache.kafka.common.record.CompressionType;
+import org.apache.kafka.common.record.MemoryRecords;
+import org.apache.kafka.common.record.MemoryRecordsBuilder;
+import org.apache.kafka.common.record.Record;
+import org.apache.kafka.common.record.RecordBatch;
+import org.apache.kafka.common.record.TimestampType;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.OperationsPerInvocation;
@@ -80,7 +87,8 @@ public class RecordBatchIterationBenchmark {
 
     private ByteBuffer createBatch(int batchSize) {
         byte[] value = new byte[messageSize];
-        final ByteBuffer buf = ByteBuffer.allocate(AbstractRecords.sizeInBytesUpperBound(messageVersion, new byte[]{}, value, new Header[]{}));
+        final ByteBuffer buf = ByteBuffer.allocate(
+            AbstractRecords.sizeInBytesUpperBound(messageVersion, new byte[]{}, value, new Header[]{}));
 
         final MemoryRecordsBuilder builder =
             MemoryRecords.builder(buf, messageVersion, type, TimestampType.CREATE_TIME, startingOffset);
