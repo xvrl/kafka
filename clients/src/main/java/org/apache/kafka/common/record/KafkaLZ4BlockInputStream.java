@@ -60,6 +60,8 @@ public final class KafkaLZ4BlockInputStream extends InputStream {
 
     private final ByteBuffer in;
 
+    // maintain a separate ByteBuffer reference to read from, so we can point
+    // it directly to the input buffer whe reading uncompressed blocks
     private ByteBuffer theBuffer;
     private final ByteBuffer decompressionBuffer;
     private final int maxBlockSize;
