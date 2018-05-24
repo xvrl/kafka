@@ -78,7 +78,7 @@ public enum CompressionType {
         @Override
         public OutputStream wrapForOutput(ByteBufferOutputStream buffer, byte messageVersion) {
             try {
-                return (OutputStream) SnappyConstructors.OUTPUT.invoke(buffer);
+                return (OutputStream) SnappyConstructors.OUTPUT.invokeExact((OutputStream)buffer);
             } catch (Throwable e) {
                 throw new KafkaException(e);
             }
@@ -87,7 +87,7 @@ public enum CompressionType {
         @Override
         public InputStream wrapForInput(ByteBuffer buffer, byte messageVersion, BufferSupplier decompressionBufferSupplier) {
             try {
-                return (InputStream) SnappyConstructors.INPUT.invoke(new ByteBufferInputStream(buffer));
+                return (InputStream) SnappyConstructors.INPUT.invokeExact((InputStream)new ByteBufferInputStream(buffer));
             } catch (Throwable e) {
                 throw new KafkaException(e);
             }
@@ -184,10 +184,19 @@ public enum CompressionType {
     // an error until KafkaLZ4BlockInputStream is initialized, which only happens if LZ4 is actually used.
 
     private static class SnappyConstructors {
-        static final MethodHandle INPUT = findConstructor("org.xerial.snappy.SnappyInputStream",
-                MethodType.methodType(void.class, InputStream.class));
-        static final MethodHandle OUTPUT = findConstructor("org.xerial.snappy.SnappyOutputStream",
-                MethodType.methodType(void.class, OutputStream.class));
+        static final MethodHandle INPUT;
+        static final MethodHandle OUTPUT;
+
+        static {
+            MethodHandle in = findConstructor("org.xerial.snappy.SnappyInputStream",
+                                    MethodType.methodType(void.class, InputStream.class));
+            INPUT = in.asType(in.type().changeReturnType(InputStream.class));
+
+            MethodHandle out = findConstructor("org.xerial.snappy.SnappyOutputStream",
+                              MethodType.methodType(void.class, OutputStream.class));
+            OUTPUT = out.asType(out.type().changeReturnType(OutputStream.class));
+        }
+
     }
 
     private static MethodHandle findConstructor(String className, MethodType methodType) {
