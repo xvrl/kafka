@@ -18,13 +18,13 @@ package org.apache.kafka.common.record;
 
 import net.jpountz.xxhash.XXHashFactory;
 
+import org.apache.kafka.common.utils.ByteBufferOutputStream;
 import org.hamcrest.CoreMatchers;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -120,18 +120,16 @@ public class KafkaLZ4Test {
 
     @Test
     public void testNotSupported() throws Exception {
-        byte[] compressed = compressedBytes();
-        compressed[0] = 0x00;
-        ByteBuffer buffer = ByteBuffer.wrap(compressed);
+        ByteBuffer buffer = compressedBytes();
+        buffer.put(0, (byte) 0x00);
         IOException e = assertThrows(IOException.class, () -> makeInputStream(buffer));
         assertEquals(KafkaLZ4BlockInputStream.NOT_SUPPORTED, e.getMessage());
     }
 
     @Test
     public void testBadFrameChecksum() throws Exception {
-        byte[] compressed = compressedBytes();
-        compressed[6] = (byte) 0xFF;
-        ByteBuffer buffer = ByteBuffer.wrap(compressed);
+        ByteBuffer buffer = compressedBytes();
+        buffer.put(6, (byte) 0xFF);
 
         if (ignoreFlagDescriptorChecksum) {
             makeInputStream(buffer);
@@ -146,8 +144,7 @@ public class KafkaLZ4Test {
         if (!close || (useBrokenFlagDescriptorChecksum && !ignoreFlagDescriptorChecksum))
             return;
 
-        byte[] compressed = compressedBytes();
-        ByteBuffer buffer = ByteBuffer.wrap(compressed).order(ByteOrder.LITTLE_ENDIAN);
+        ByteBuffer buffer = compressedBytes().order(ByteOrder.LITTLE_ENDIAN);
 
         int blockSize = buffer.getInt(7);
         blockSize = (blockSize & LZ4_FRAME_INCOMPRESSIBLE_MASK) | (1 << 24 & ~LZ4_FRAME_INCOMPRESSIBLE_MASK);
@@ -161,17 +158,16 @@ public class KafkaLZ4Test {
 
     @Test
     public void testCompression() throws Exception {
-        byte[] compressed = compressedBytes();
+        ByteBuffer compressed = compressedBytes();
 
         // Check magic bytes stored as little-endian
-        int offset = 0;
-        assertEquals(0x04, compressed[offset++]);
-        assertEquals(0x22, compressed[offset++]);
-        assertEquals(0x4D, compressed[offset++]);
-        assertEquals(0x18, compressed[offset++]);
+        assertEquals(0x04, compressed.get());
+        assertEquals(0x22, compressed.get());
+        assertEquals(0x4D, compressed.get());
+        assertEquals(0x18, compressed.get());
 
         // Check flg descriptor
-        byte flg = compressed[offset++];
+        byte flg = compressed.get();
 
         // 2-bit version must be 01
         int version = (flg >>> 6) & 3;
@@ -182,7 +178,7 @@ public class KafkaLZ4Test {
         assertEquals(0, reserved);
 
         // Check block descriptor
-        byte bd = compressed[offset++];
+        byte bd = compressed.get();
 
         // Block max-size
         int blockMaxSize = (bd >>> 4) & 7;
@@ -200,48 +196,47 @@ public class KafkaLZ4Test {
         // there are 8 additional bytes before checksum
         boolean contentSize = ((flg >>> 3) & 1) != 0;
         if (contentSize)
-            offset += 8;
+            compressed.position(compressed.position() + 8);
 
         // Checksum applies to frame descriptor: flg, bd, and optional contentsize
         // so initial offset should be 4 (for magic bytes)
         int off = 4;
-        int len = offset - 4;
+        int len = compressed.position() - 4;
 
         // Initial implementation of checksum incorrectly applied to full header
         // including magic bytes
         if (this.useBrokenFlagDescriptorChecksum) {
             off = 0;
-            len = offset;
+            len = compressed.position();
         }
 
         int hash = XXHashFactory.fastestInstance().hash32().hash(compressed, off, len, 0);
 
-        byte hc = compressed[offset++];
+        byte hc = compressed.get();
         assertEquals((byte) ((hash >> 8) & 0xFF), hc);
 
         // Check EndMark, data block with size `0` expressed as a 32-bits value
         if (this.close) {
-            offset = compressed.length - 4;
-            assertEquals(0, compressed[offset++]);
-            assertEquals(0, compressed[offset++]);
-            assertEquals(0, compressed[offset++]);
-            assertEquals(0, compressed[offset++]);
+            compressed.position(compressed.limit() - 4);
+            assertEquals(0, compressed.get());
+            assertEquals(0, compressed.get());
+            assertEquals(0, compressed.get());
+            assertEquals(0, compressed.get());
         }
     }
 
     @Test
     public void testArrayBackedBuffer() throws IOException {
-        byte[] compressed = compressedBytes();
-        testDecompression(ByteBuffer.wrap(compressed));
+        testDecompression(compressedBytes());
     }
 
     @Test
     public void testArrayBackedBufferSlice() throws IOException {
-        byte[] compressed = compressedBytes();
+        ByteBuffer compressed = compressedBytes();
 
         int sliceOffset = 12;
 
-        ByteBuffer buffer = ByteBuffer.allocate(compressed.length + sliceOffset + 123);
+        ByteBuffer buffer = ByteBuffer.allocate(compressed.remaining() + sliceOffset + 123);
         buffer.position(sliceOffset);
         buffer.put(compressed).flip();
         buffer.position(sliceOffset);
@@ -249,8 +244,9 @@ public class KafkaLZ4Test {
         ByteBuffer slice = buffer.slice();
         testDecompression(slice);
 
+        compressed.rewind();
         int offset = 42;
-        buffer = ByteBuffer.allocate(compressed.length + sliceOffset + offset);
+        buffer = ByteBuffer.allocate(compressed.remaining() + sliceOffset + offset);
         buffer.position(sliceOffset + offset);
         buffer.put(compressed).flip();
         buffer.position(sliceOffset);
@@ -262,15 +258,16 @@ public class KafkaLZ4Test {
 
     @Test
     public void testDirectBuffer() throws IOException {
-        byte[] compressed = compressedBytes();
+        ByteBuffer compressed = compressedBytes();
         ByteBuffer buffer;
 
-        buffer = ByteBuffer.allocateDirect(compressed.length);
+        buffer = ByteBuffer.allocateDirect(compressed.remaining());
         buffer.put(compressed).flip();
         testDecompression(buffer);
 
+        compressed.rewind();
         int offset = 42;
-        buffer = ByteBuffer.allocateDirect(compressed.length + offset + 123);
+        buffer = ByteBuffer.allocateDirect(compressed.remaining() + offset + 123);
         buffer.position(offset);
         buffer.put(compressed).flip();
         buffer.position(offset);
@@ -281,7 +278,7 @@ public class KafkaLZ4Test {
     public void testSkip() throws Exception {
         if (!close || (useBrokenFlagDescriptorChecksum && !ignoreFlagDescriptorChecksum)) return;
 
-        final KafkaLZ4BlockInputStream in = makeInputStream(ByteBuffer.wrap(compressedBytes()));
+        final KafkaLZ4BlockInputStream in = makeInputStream(compressedBytes());
 
         int n = 100;
         int remaining = payload.length;
@@ -332,8 +329,8 @@ public class KafkaLZ4Test {
         if (!close) assertNotNull(error);
     }
 
-    private byte[] compressedBytes() throws IOException {
-        ByteArrayOutputStream output = new ByteArrayOutputStream();
+    private ByteBuffer compressedBytes() throws IOException {
+        ByteBufferOutputStream output = new ByteBufferOutputStream(1024);
         KafkaLZ4BlockOutputStream lz4 = new KafkaLZ4BlockOutputStream(
             output,
             KafkaLZ4BlockOutputStream.BLOCKSIZE_64KB,
@@ -346,6 +343,8 @@ public class KafkaLZ4Test {
         } else {
             lz4.flush();
         }
-        return output.toByteArray();
+        ByteBuffer compressed = output.buffer().duplicate();
+        compressed.flip();
+        return compressed;
     }
 }
