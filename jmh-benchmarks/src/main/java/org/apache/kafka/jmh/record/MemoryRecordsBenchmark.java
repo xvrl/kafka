@@ -62,8 +62,8 @@ public class MemoryRecordsBenchmark {
     @Param(value = {"2"})
     private byte messageVersion = CURRENT_MAGIC_VALUE;
 
-    @Param(value = { "1000", })
-    private int maxMessageSize = 1000;
+    @Param(value = { "200", })
+    private int maxMessageSize = 200;
 
     @Param(value = {"RANDOM", "ONES"})
     private Bytes bytes = Bytes.RANDOM;
@@ -111,9 +111,8 @@ public class MemoryRecordsBenchmark {
     @Fork(jvmArgsAppend = "-Xmx8g")
     @Benchmark
     public void measureVariableMessageSizeBatch(Blackhole bh) throws IOException {
-        MemoryRecordsBuilder builder = MemoryRecords
-            .builder(buf, bufferSupplier, messageVersion,
-                     compressionType, TimestampType.CREATE_TIME, startingOffset);
+        MemoryRecordsBuilder builder = MemoryRecords.builder(buf, bufferSupplier, messageVersion, compressionType,
+                                                             TimestampType.CREATE_TIME, startingOffset);
         for (ByteBuffer b : messageBuffers) {
             bh.consume(builder.append(0, null, b));
         }
