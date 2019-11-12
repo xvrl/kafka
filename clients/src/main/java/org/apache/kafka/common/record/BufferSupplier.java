@@ -22,6 +22,10 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Simple non-threadsafe interface for caching byte buffers. This is suitable for simple cases like ensuring that
@@ -65,27 +69,31 @@ public abstract class BufferSupplier implements AutoCloseable {
 
     private static class DefaultSupplier extends BufferSupplier {
         // We currently use a single block size, so optimise for that case
-        private final Map<Integer, Deque<ByteBuffer>> bufferMap = new HashMap<>(1);
+        private final Map<Integer, Queue<ByteBuffer>> bufferMap = new ConcurrentHashMap<>(1);
 
         @Override
         public ByteBuffer get(int size) {
-            Deque<ByteBuffer> bufferQueue = bufferMap.get(size);
-            if (bufferQueue == null || bufferQueue.isEmpty())
+            Queue<ByteBuffer> bufferQueue = bufferMap.get(size);
+            final ByteBuffer buffer;
+            if (bufferQueue == null || (buffer = bufferQueue.poll()) == null)
                 return ByteBuffer.allocate(size);
             else
-                return bufferQueue.pollFirst();
+                return buffer;
         }
 
         @Override
         public void release(ByteBuffer buffer) {
             buffer.clear();
-            Deque<ByteBuffer> bufferQueue = bufferMap.get(buffer.capacity());
+            Queue<ByteBuffer> bufferQueue = bufferMap.get(buffer.capacity());
             if (bufferQueue == null) {
                 // We currently keep a single buffer in flight, so optimise for that case
-                bufferQueue = new ArrayDeque<>(1);
-                bufferMap.put(buffer.capacity(), bufferQueue);
+                bufferQueue = new ConcurrentLinkedQueue<>();
+                Queue<ByteBuffer> prev = bufferMap.putIfAbsent(buffer.capacity(), bufferQueue);
+                if(prev != null)
+                    bufferQueue = prev;
+
             }
-            bufferQueue.addLast(buffer);
+            bufferQueue.offer(buffer);
         }
 
         @Override

@@ -105,7 +105,7 @@ public class RecordBatchIterationBenchmark {
         );
 
         final MemoryRecordsBuilder builder =
-            MemoryRecords.builder(buf, messageVersion, compressionType, TimestampType.CREATE_TIME, startingOffset);
+            MemoryRecords.builder(buf, bufferSupplier, messageVersion, compressionType, TimestampType.CREATE_TIME, startingOffset);
 
         for (int i = 0; i < batchSize; ++i) {
             switch (bytes) {

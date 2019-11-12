@@ -37,7 +37,7 @@ import java.util.zip.GZIPOutputStream;
 public enum CompressionType {
     NONE(0, "none", 1.0f) {
         @Override
-        public OutputStream wrapForOutput(ByteBufferOutputStream buffer, byte messageVersion) {
+        public OutputStream wrapForOutput(ByteBufferOutputStream buffer, byte messageVersion, BufferSupplier bufferSupplier) {
             return buffer;
         }
 
@@ -49,7 +49,7 @@ public enum CompressionType {
 
     GZIP(1, "gzip", 1.0f) {
         @Override
-        public OutputStream wrapForOutput(ByteBufferOutputStream buffer, byte messageVersion) {
+        public OutputStream wrapForOutput(ByteBufferOutputStream buffer, byte messageVersion, BufferSupplier bufferSupplier) {
             try {
                 // Set input buffer (uncompressed) to 16 KB (none by default) and output buffer (compressed) to
                 // 8 KB (0.5 KB by default) to ensure reasonable performance in cases where the caller passes a small
@@ -76,7 +76,7 @@ public enum CompressionType {
 
     SNAPPY(2, "snappy", 1.0f) {
         @Override
-        public OutputStream wrapForOutput(ByteBufferOutputStream buffer, byte messageVersion) {
+        public OutputStream wrapForOutput(ByteBufferOutputStream buffer, byte messageVersion, BufferSupplier bufferSupplier) {
             try {
                 return (OutputStream) SnappyConstructors.OUTPUT.invoke(buffer);
             } catch (Throwable e) {
@@ -96,9 +96,9 @@ public enum CompressionType {
 
     LZ4(3, "lz4", 1.0f) {
         @Override
-        public OutputStream wrapForOutput(ByteBufferOutputStream buffer, byte messageVersion) {
+        public OutputStream wrapForOutput(ByteBufferOutputStream buffer, byte messageVersion, BufferSupplier bufferSupplier) {
             try {
-                return new KafkaLZ4BlockOutputStream(buffer, messageVersion == RecordBatch.MAGIC_VALUE_V0);
+                return new KafkaLZ4BlockOutputStream(buffer, bufferSupplier, messageVersion == RecordBatch.MAGIC_VALUE_V0);
             } catch (Throwable e) {
                 throw new KafkaException(e);
             }
@@ -117,7 +117,7 @@ public enum CompressionType {
 
     ZSTD(4, "zstd", 1.0f) {
         @Override
-        public OutputStream wrapForOutput(ByteBufferOutputStream buffer, byte messageVersion) {
+        public OutputStream wrapForOutput(ByteBufferOutputStream buffer, byte messageVersio, BufferSupplier bufferSupplier) {
             try {
                 return (OutputStream) ZstdConstructors.OUTPUT.invoke(buffer);
             } catch (Throwable e) {
@@ -153,7 +153,7 @@ public enum CompressionType {
      * write to the underlying buffer in the given {@link ByteBufferOutputStream} after the compressed data has been written.
      * In the event that the buffer needs to be expanded while writing the data, access to the underlying buffer needs to be preserved.
      */
-    public abstract OutputStream wrapForOutput(ByteBufferOutputStream bufferStream, byte messageVersion);
+    public abstract OutputStream wrapForOutput(ByteBufferOutputStream bufferStream, byte messageVersion, BufferSupplier bufferSupplier);
 
     /**
      * Wrap buffer with an InputStream that will decompress data with this CompressionType.

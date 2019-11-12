@@ -22,6 +22,7 @@ import org.apache.kafka.common.KafkaException;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.header.Header;
 import org.apache.kafka.common.header.internals.RecordHeader;
+import org.apache.kafka.common.record.BufferSupplier;
 import org.apache.kafka.common.record.CompressionType;
 import org.apache.kafka.common.record.LegacyRecord;
 import org.apache.kafka.common.record.MemoryRecords;
@@ -51,7 +52,7 @@ public class ProducerBatchTest {
     private final long now = 1488748346917L;
 
     private final MemoryRecordsBuilder memoryRecordsBuilder = MemoryRecords.builder(ByteBuffer.allocate(128),
-            CompressionType.NONE, TimestampType.CREATE_TIME, 128);
+                                                                                    BufferSupplier.NO_CACHING, CompressionType.NONE, TimestampType.CREATE_TIME, 128);
 
     @Test
     public void testChecksumNullForMagicV2() {
@@ -141,7 +142,7 @@ public class ProducerBatchTest {
     @Test
     public void testAppendedChecksumMagicV0AndV1() {
         for (byte magic : Arrays.asList(MAGIC_VALUE_V0, MAGIC_VALUE_V1)) {
-            MemoryRecordsBuilder builder = MemoryRecords.builder(ByteBuffer.allocate(128), magic,
+            MemoryRecordsBuilder builder = MemoryRecords.builder(ByteBuffer.allocate(128), BufferSupplier.NO_CACHING, magic,
                     CompressionType.NONE, TimestampType.CREATE_TIME, 0L);
             ProducerBatch batch = new ProducerBatch(new TopicPartition("topic", 1), builder, now);
             byte[] key = "hi".getBytes();
@@ -160,6 +161,7 @@ public class ProducerBatchTest {
         for (CompressionType compressionType : CompressionType.values()) {
             MemoryRecordsBuilder builder = MemoryRecords.builder(
                     ByteBuffer.allocate(1024),
+                    BufferSupplier.NO_CACHING,
                     MAGIC_VALUE_V2,
                     compressionType,
                     TimestampType.CREATE_TIME,
@@ -200,7 +202,7 @@ public class ProducerBatchTest {
                 if (compressionType == CompressionType.ZSTD && magic < MAGIC_VALUE_V2)
                     continue;
 
-                MemoryRecordsBuilder builder = MemoryRecords.builder(ByteBuffer.allocate(1024), magic,
+                MemoryRecordsBuilder builder = MemoryRecords.builder(ByteBuffer.allocate(1024), BufferSupplier.NO_CACHING, magic,
                         compressionType, TimestampType.CREATE_TIME, 0L);
 
                 ProducerBatch batch = new ProducerBatch(new TopicPartition("topic", 1), builder, now);

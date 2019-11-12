@@ -53,7 +53,8 @@ public final class KafkaLZ4BlockOutputStream extends OutputStream {
     private final boolean useBrokenFlagDescriptorChecksum;
     private final FLG flg;
     private final BD bd;
-    private ByteBufferOutputStream out;
+    private final BufferSupplier bufferSupplier;
+    private final ByteBufferOutputStream out;
     private ByteBuffer buffer;
     private boolean finished;
 
@@ -69,13 +70,14 @@ public final class KafkaLZ4BlockOutputStream extends OutputStream {
      *            compatible with older kafka clients.
      * @throws IOException
      */
-    public KafkaLZ4BlockOutputStream(ByteBufferOutputStream out, int blockSize, boolean blockChecksum, boolean useBrokenFlagDescriptorChecksum) throws IOException {
+    public KafkaLZ4BlockOutputStream(ByteBufferOutputStream out, BufferSupplier bufferSupplier, int blockSize, boolean blockChecksum, boolean useBrokenFlagDescriptorChecksum) throws IOException {
         this.out = out;
         this.useBrokenFlagDescriptorChecksum = useBrokenFlagDescriptorChecksum;
+        this.bufferSupplier = bufferSupplier;
         bd = new BD(blockSize);
         flg = new FLG(blockChecksum);
-        buffer = ByteBuffer
-            .allocate(bd.getBlockMaximumSize())
+        buffer = bufferSupplier
+            .get(bd.getBlockMaximumSize())
             .order(ByteOrder.LITTLE_ENDIAN);
         finished = false;
         writeHeader();
@@ -91,8 +93,8 @@ public final class KafkaLZ4BlockOutputStream extends OutputStream {
      *            every block of data
      * @throws IOException
      */
-    public KafkaLZ4BlockOutputStream(ByteBufferOutputStream out, int blockSize, boolean blockChecksum) throws IOException {
-        this(out, blockSize, blockChecksum, false);
+    public KafkaLZ4BlockOutputStream(ByteBufferOutputStream out, BufferSupplier bufferSupplier, int blockSize, boolean blockChecksum) throws IOException {
+        this(out, bufferSupplier, blockSize, blockChecksum, false);
     }
 
     /**
@@ -103,8 +105,8 @@ public final class KafkaLZ4BlockOutputStream extends OutputStream {
      *            values will generate an exception
      * @throws IOException
      */
-    public KafkaLZ4BlockOutputStream(ByteBufferOutputStream out, int blockSize) throws IOException {
-        this(out, blockSize, false, false);
+    public KafkaLZ4BlockOutputStream(ByteBufferOutputStream out, BufferSupplier bufferSupplier, int blockSize) throws IOException {
+        this(out, bufferSupplier, blockSize, false, false);
     }
 
     /**
@@ -113,12 +115,12 @@ public final class KafkaLZ4BlockOutputStream extends OutputStream {
      * @param out The output stream to compress
      * @throws IOException
      */
-    public KafkaLZ4BlockOutputStream(ByteBufferOutputStream out) throws IOException {
-        this(out, BLOCKSIZE_64KB);
+    public KafkaLZ4BlockOutputStream(ByteBufferOutputStream out, BufferSupplier bufferSupplier) throws IOException {
+        this(out, bufferSupplier, BLOCKSIZE_64KB);
     }
 
-    public KafkaLZ4BlockOutputStream(ByteBufferOutputStream out, boolean useBrokenHC) throws IOException {
-        this(out, BLOCKSIZE_64KB, false, useBrokenHC);
+    public KafkaLZ4BlockOutputStream(ByteBufferOutputStream out, BufferSupplier bufferSupplier, boolean useBrokenHC) throws IOException {
+        this(out, bufferSupplier, BLOCKSIZE_64KB, false, useBrokenHC);
     }
 
     /**
@@ -271,13 +273,13 @@ public final class KafkaLZ4BlockOutputStream extends OutputStream {
             }
         } finally {
             try {
+                bufferSupplier.release(buffer);
                 if (out != null) {
                     try (OutputStream outStream = out) {
                         outStream.flush();
                     }
                 }
             } finally {
-                out = null;
                 buffer = null;
                 finished = true;
             }

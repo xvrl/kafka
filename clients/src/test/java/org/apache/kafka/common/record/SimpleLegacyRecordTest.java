@@ -50,7 +50,7 @@ public class SimpleLegacyRecordTest {
     public void testCompressedIterationWithEmptyRecords() throws Exception {
         ByteBuffer emptyCompressedValue = ByteBuffer.allocate(64);
         OutputStream gzipOutput = CompressionType.GZIP.wrapForOutput(new ByteBufferOutputStream(emptyCompressedValue),
-                RecordBatch.MAGIC_VALUE_V1);
+                RecordBatch.MAGIC_VALUE_V1, BufferSupplier.NO_CACHING);
         gzipOutput.close();
         emptyCompressedValue.flip();
 

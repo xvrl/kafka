@@ -83,6 +83,7 @@ public class MemoryRecordsBuilder implements AutoCloseable {
     private boolean aborted = false;
 
     public MemoryRecordsBuilder(ByteBufferOutputStream bufferStream,
+                                BufferSupplier bufferSupplier,
                                 byte magic,
                                 CompressionType compressionType,
                                 TimestampType timestampType,
@@ -127,7 +128,7 @@ public class MemoryRecordsBuilder implements AutoCloseable {
 
         bufferStream.position(initialPosition + batchHeaderSizeInBytes);
         this.bufferStream = bufferStream;
-        this.appendStream = new DataOutputStream(compressionType.wrapForOutput(this.bufferStream, magic));
+        this.appendStream = new DataOutputStream(compressionType.wrapForOutput(this.bufferStream, magic, bufferSupplier));
     }
 
     /**
@@ -151,6 +152,7 @@ public class MemoryRecordsBuilder implements AutoCloseable {
      *                   record added exceeds the size).
      */
     public MemoryRecordsBuilder(ByteBuffer buffer,
+                                BufferSupplier bufferSupplier,
                                 byte magic,
                                 CompressionType compressionType,
                                 TimestampType timestampType,
@@ -163,7 +165,7 @@ public class MemoryRecordsBuilder implements AutoCloseable {
                                 boolean isControlBatch,
                                 int partitionLeaderEpoch,
                                 int writeLimit) {
-        this(new ByteBufferOutputStream(buffer), magic, compressionType, timestampType, baseOffset, logAppendTime,
+        this(new ByteBufferOutputStream(buffer), bufferSupplier, magic, compressionType, timestampType, baseOffset, logAppendTime,
                 producerId, producerEpoch, baseSequence, isTransactional, isControlBatch, partitionLeaderEpoch,
                 writeLimit);
     }

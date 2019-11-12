@@ -76,7 +76,7 @@ public class DefaultRecordBatchTest {
     public void buildDefaultRecordBatch() {
         ByteBuffer buffer = ByteBuffer.allocate(2048);
 
-        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, RecordBatch.MAGIC_VALUE_V2, CompressionType.NONE,
+        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, RecordBatch.MAGIC_VALUE_V2, CompressionType.NONE,
                 TimestampType.CREATE_TIME, 1234567L);
         builder.appendWithOffset(1234567, 1L, "a".getBytes(), "v".getBytes());
         builder.appendWithOffset(1234568, 2L, "b".getBytes(), "v".getBytes());
@@ -106,7 +106,7 @@ public class DefaultRecordBatchTest {
 
         ByteBuffer buffer = ByteBuffer.allocate(2048);
 
-        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, RecordBatch.MAGIC_VALUE_V2, CompressionType.NONE,
+        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, RecordBatch.MAGIC_VALUE_V2, CompressionType.NONE,
                 TimestampType.CREATE_TIME, 1234567L, RecordBatch.NO_TIMESTAMP, pid, epoch, baseSequence);
         builder.appendWithOffset(1234567, 1L, "a".getBytes(), "v".getBytes());
         builder.appendWithOffset(1234568, 2L, "b".getBytes(), "v".getBytes());
@@ -135,7 +135,7 @@ public class DefaultRecordBatchTest {
         int baseSequence = Integer.MAX_VALUE - 1;
         ByteBuffer buffer = ByteBuffer.allocate(2048);
 
-        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, RecordBatch.MAGIC_VALUE_V2, CompressionType.NONE,
+        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, RecordBatch.MAGIC_VALUE_V2, CompressionType.NONE,
                 TimestampType.CREATE_TIME, 1234567L, RecordBatch.NO_TIMESTAMP, pid, epoch, baseSequence);
         builder.appendWithOffset(1234567, 1L, "a".getBytes(), "v".getBytes());
         builder.appendWithOffset(1234568, 2L, "b".getBytes(), "v".getBytes());
@@ -342,7 +342,7 @@ public class DefaultRecordBatchTest {
         int coordinatorEpoch = 15;
 
         ByteBuffer buffer = ByteBuffer.allocate(128);
-        MemoryRecordsBuilder builder = new MemoryRecordsBuilder(buffer, RecordBatch.CURRENT_MAGIC_VALUE,
+        MemoryRecordsBuilder builder = new MemoryRecordsBuilder(buffer, BufferSupplier.NO_CACHING, RecordBatch.CURRENT_MAGIC_VALUE,
                 CompressionType.NONE, TimestampType.CREATE_TIME, 0L, RecordBatch.NO_TIMESTAMP, producerId,
                 producerEpoch, RecordBatch.NO_SEQUENCE, true, true, RecordBatch.NO_PARTITION_LEADER_EPOCH,
                 buffer.remaining());
@@ -413,7 +413,7 @@ public class DefaultRecordBatchTest {
     private static DefaultRecordBatch recordsWithInvalidRecordCount(Byte magicValue, long timestamp,
                                               CompressionType codec, int invalidCount) {
         ByteBuffer buf = ByteBuffer.allocate(512);
-        MemoryRecordsBuilder builder = MemoryRecords.builder(buf, magicValue, codec, TimestampType.CREATE_TIME, 0L);
+        MemoryRecordsBuilder builder = MemoryRecords.builder(buf, BufferSupplier.NO_CACHING, magicValue, codec, TimestampType.CREATE_TIME, 0L);
         builder.appendWithOffset(0, timestamp, null, "hello".getBytes());
         builder.appendWithOffset(1, timestamp, null, "there".getBytes());
         builder.appendWithOffset(2, timestamp, null, "beautiful".getBytes());

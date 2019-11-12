@@ -20,6 +20,7 @@ package org.apache.kafka.common.requests;
 import org.apache.kafka.common.InvalidRecordException;
 import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.protocol.ApiKeys;
+import org.apache.kafka.common.record.BufferSupplier;
 import org.apache.kafka.common.record.CompressionType;
 import org.apache.kafka.common.record.MemoryRecords;
 import org.apache.kafka.common.record.MemoryRecordsBuilder;
@@ -79,8 +80,8 @@ public class ProduceRequestTest {
     @Test
     public void testBuildWithOldMessageFormat() {
         ByteBuffer buffer = ByteBuffer.allocate(256);
-        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, RecordBatch.MAGIC_VALUE_V1, CompressionType.NONE,
-                TimestampType.CREATE_TIME, 0L);
+        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, RecordBatch.MAGIC_VALUE_V1, CompressionType.NONE,
+                                                             TimestampType.CREATE_TIME, 0L);
         builder.append(10L, null, "a".getBytes());
         Map<TopicPartition, MemoryRecords> produceData = new HashMap<>();
         produceData.put(new TopicPartition("test", 0), builder.build());
@@ -94,7 +95,7 @@ public class ProduceRequestTest {
     @Test
     public void testBuildWithCurrentMessageFormat() {
         ByteBuffer buffer = ByteBuffer.allocate(256);
-        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, RecordBatch.CURRENT_MAGIC_VALUE,
+        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, RecordBatch.CURRENT_MAGIC_VALUE,
                 CompressionType.NONE, TimestampType.CREATE_TIME, 0L);
         builder.append(10L, null, "a".getBytes());
         Map<TopicPartition, MemoryRecords> produceData = new HashMap<>();
@@ -109,11 +110,11 @@ public class ProduceRequestTest {
     @Test
     public void testV3AndAboveShouldContainOnlyOneRecordBatch() {
         ByteBuffer buffer = ByteBuffer.allocate(256);
-        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, CompressionType.NONE, TimestampType.CREATE_TIME, 0L);
+        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, CompressionType.NONE, TimestampType.CREATE_TIME, 0L);
         builder.append(10L, null, "a".getBytes());
         builder.close();
 
-        builder = MemoryRecords.builder(buffer, CompressionType.NONE, TimestampType.CREATE_TIME, 1L);
+        builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, CompressionType.NONE, TimestampType.CREATE_TIME, 1L);
         builder.append(11L, "1".getBytes(), "b".getBytes());
         builder.append(12L, null, "c".getBytes());
         builder.close();
@@ -137,7 +138,7 @@ public class ProduceRequestTest {
     @Test
     public void testV3AndAboveCannotUseMagicV0() {
         ByteBuffer buffer = ByteBuffer.allocate(256);
-        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, RecordBatch.MAGIC_VALUE_V0, CompressionType.NONE,
+        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, RecordBatch.MAGIC_VALUE_V0, CompressionType.NONE,
                 TimestampType.NO_TIMESTAMP_TYPE, 0L);
         builder.append(10L, null, "a".getBytes());
 
@@ -150,7 +151,7 @@ public class ProduceRequestTest {
     @Test
     public void testV3AndAboveCannotUseMagicV1() {
         ByteBuffer buffer = ByteBuffer.allocate(256);
-        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, RecordBatch.MAGIC_VALUE_V1, CompressionType.NONE,
+        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, RecordBatch.MAGIC_VALUE_V1, CompressionType.NONE,
                 TimestampType.CREATE_TIME, 0L);
         builder.append(10L, null, "a".getBytes());
 
@@ -163,7 +164,7 @@ public class ProduceRequestTest {
     @Test
     public void testV6AndBelowCannotUseZStdCompression() {
         ByteBuffer buffer = ByteBuffer.allocate(256);
-        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, RecordBatch.MAGIC_VALUE_V2, CompressionType.ZSTD,
+        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, RecordBatch.MAGIC_VALUE_V2, CompressionType.ZSTD,
             TimestampType.CREATE_TIME, 0L);
         builder.append(10L, null, "a".getBytes());
 

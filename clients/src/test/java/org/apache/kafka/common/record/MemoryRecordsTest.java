@@ -75,7 +75,7 @@ public class MemoryRecordsTest {
 
         ByteBuffer buffer = ByteBuffer.allocate(1024);
 
-        MemoryRecordsBuilder builder = new MemoryRecordsBuilder(buffer, magic, compression,
+        MemoryRecordsBuilder builder = new MemoryRecordsBuilder(buffer, BufferSupplier.NO_CACHING, magic, compression,
                 TimestampType.CREATE_TIME, firstOffset, logAppendTime, pid, epoch, firstSequence, false, false,
                 partitionLeaderEpoch, buffer.limit());
 
@@ -157,7 +157,7 @@ public class MemoryRecordsTest {
     @Test
     public void testHasRoomForMethod() {
         assumeAtLeastV2OrNotZstd();
-        MemoryRecordsBuilder builder = MemoryRecords.builder(ByteBuffer.allocate(1024), magic, compression,
+        MemoryRecordsBuilder builder = MemoryRecords.builder(ByteBuffer.allocate(1024), BufferSupplier.NO_CACHING, magic, compression,
                 TimestampType.CREATE_TIME, 0L);
         builder.append(0L, "a".getBytes(), "1".getBytes());
         assertTrue(builder.hasRoomFor(1L, "b".getBytes(), "2".getBytes(), Record.EMPTY_HEADERS));
@@ -168,7 +168,7 @@ public class MemoryRecordsTest {
     @Test
     public void testHasRoomForMethodWithHeaders() {
         if (magic >= RecordBatch.MAGIC_VALUE_V2) {
-            MemoryRecordsBuilder builder = MemoryRecords.builder(ByteBuffer.allocate(100), magic, compression,
+            MemoryRecordsBuilder builder = MemoryRecords.builder(ByteBuffer.allocate(100), BufferSupplier.NO_CACHING, magic, compression,
                     TimestampType.CREATE_TIME, 0L);
             RecordHeaders headers = new RecordHeaders();
             headers.add("hello", "world.world".getBytes());
@@ -226,7 +226,7 @@ public class MemoryRecordsTest {
             int partitionLeaderEpoch = 67;
 
             ByteBuffer buffer = ByteBuffer.allocate(2048);
-            MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, magic, compression, TimestampType.CREATE_TIME,
+            MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, magic, compression, TimestampType.CREATE_TIME,
                     0L, RecordBatch.NO_TIMESTAMP, partitionLeaderEpoch);
             builder.append(10L, null, "a".getBytes());
             builder.append(11L, "1".getBytes(), "b".getBytes());
@@ -259,7 +259,7 @@ public class MemoryRecordsTest {
                 int partitionLeaderEpoch = 293;
                 int numRecords = 2;
 
-                MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, magic, compression, TimestampType.CREATE_TIME,
+                MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, magic, compression, TimestampType.CREATE_TIME,
                         baseOffset, RecordBatch.NO_TIMESTAMP, producerId, producerEpoch, baseSequence, isTransactional,
                         partitionLeaderEpoch);
                 builder.append(11L, "2".getBytes(), "b".getBytes());
@@ -447,22 +447,22 @@ public class MemoryRecordsTest {
         assumeTrue(compression != CompressionType.NONE || magic >= MAGIC_VALUE_V2);
 
         ByteBuffer buffer = ByteBuffer.allocate(2048);
-        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, magic, compression, TimestampType.CREATE_TIME, 0L);
+        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, magic, compression, TimestampType.CREATE_TIME, 0L);
         builder.append(10L, "1".getBytes(), "a".getBytes());
         builder.close();
 
-        builder = MemoryRecords.builder(buffer, magic, compression, TimestampType.CREATE_TIME, 1L);
+        builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, magic, compression, TimestampType.CREATE_TIME, 1L);
         builder.append(11L, "2".getBytes(), "b".getBytes());
         builder.append(12L, "3".getBytes(), "c".getBytes());
         builder.close();
 
-        builder = MemoryRecords.builder(buffer, magic, compression, TimestampType.CREATE_TIME, 3L);
+        builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, magic, compression, TimestampType.CREATE_TIME, 3L);
         builder.append(13L, "4".getBytes(), "d".getBytes());
         builder.append(20L, "5".getBytes(), "e".getBytes());
         builder.append(15L, "6".getBytes(), "f".getBytes());
         builder.close();
 
-        builder = MemoryRecords.builder(buffer, magic, compression, TimestampType.CREATE_TIME, 6L);
+        builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, magic, compression, TimestampType.CREATE_TIME, 6L);
         builder.append(16L, "7".getBytes(), "g".getBytes());
         builder.close();
 
@@ -500,7 +500,7 @@ public class MemoryRecordsTest {
         ByteBuffer buffer = ByteBuffer.allocate(2048);
 
         // create a batch with some offset gaps to simulate a compacted batch
-        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, magic, compression,
+        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, magic, compression,
                 TimestampType.CREATE_TIME, 0L);
         builder.appendWithOffset(5L, 10L, null, "a".getBytes());
         builder.appendWithOffset(8L, 11L, "1".getBytes(), "b".getBytes());
@@ -546,7 +546,7 @@ public class MemoryRecordsTest {
             ByteBuffer buffer = ByteBuffer.allocate(2048);
 
             // non-idempotent, non-transactional
-            MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, magic, compression, TimestampType.CREATE_TIME, 0L);
+            MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, magic, compression, TimestampType.CREATE_TIME, 0L);
             builder.append(10L, null, "a".getBytes());
             builder.append(11L, "1".getBytes(), "b".getBytes());
             builder.append(12L, null, "c".getBytes());
@@ -557,7 +557,7 @@ public class MemoryRecordsTest {
             long pid1 = 23L;
             short epoch1 = 5;
             int baseSequence1 = 10;
-            builder = MemoryRecords.builder(buffer, magic, compression, TimestampType.CREATE_TIME, 3L,
+            builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, magic, compression, TimestampType.CREATE_TIME, 3L,
                     RecordBatch.NO_TIMESTAMP, pid1, epoch1, baseSequence1);
             builder.append(13L, null, "d".getBytes());
             builder.append(14L, "4".getBytes(), "e".getBytes());
@@ -568,7 +568,7 @@ public class MemoryRecordsTest {
             long pid2 = 99384L;
             short epoch2 = 234;
             int baseSequence2 = 15;
-            builder = MemoryRecords.builder(buffer, magic, compression, TimestampType.CREATE_TIME, 3L,
+            builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, magic, compression, TimestampType.CREATE_TIME, 3L,
                     RecordBatch.NO_TIMESTAMP, pid2, epoch2, baseSequence2, true, RecordBatch.NO_PARTITION_LEADER_EPOCH);
             builder.append(16L, "6".getBytes(), "g".getBytes());
             builder.append(17L, "7".getBytes(), "h".getBytes());
@@ -640,23 +640,23 @@ public class MemoryRecordsTest {
         assumeAtLeastV2OrNotZstd();
 
         ByteBuffer buffer = ByteBuffer.allocate(1024);
-        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, magic, compression, TimestampType.CREATE_TIME, 0L);
+        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, magic, compression, TimestampType.CREATE_TIME, 0L);
         builder.append(10L, null, "a".getBytes());
         builder.close();
 
-        builder = MemoryRecords.builder(buffer, magic, compression, TimestampType.CREATE_TIME, 1L);
+        builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, magic, compression, TimestampType.CREATE_TIME, 1L);
         builder.append(11L, "1".getBytes(), new byte[128]);
         builder.append(12L, "2".getBytes(), "c".getBytes());
         builder.append(13L, null, "d".getBytes());
         builder.close();
 
-        builder = MemoryRecords.builder(buffer, magic, compression, TimestampType.CREATE_TIME, 4L);
+        builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, magic, compression, TimestampType.CREATE_TIME, 4L);
         builder.append(14L, null, "e".getBytes());
         builder.append(15L, "5".getBytes(), "f".getBytes());
         builder.append(16L, "6".getBytes(), "g".getBytes());
         builder.close();
 
-        builder = MemoryRecords.builder(buffer, magic, compression, TimestampType.CREATE_TIME, 7L);
+        builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, magic, compression, TimestampType.CREATE_TIME, 7L);
         builder.append(17L, "7".getBytes(), new byte[128]);
         builder.close();
 
@@ -692,22 +692,22 @@ public class MemoryRecordsTest {
         assumeAtLeastV2OrNotZstd();
 
         ByteBuffer buffer = ByteBuffer.allocate(2048);
-        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, magic, compression, TimestampType.CREATE_TIME, 0L);
+        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, magic, compression, TimestampType.CREATE_TIME, 0L);
         builder.append(10L, null, "a".getBytes());
         builder.close();
 
-        builder = MemoryRecords.builder(buffer, magic, compression, TimestampType.CREATE_TIME, 1L);
+        builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, magic, compression, TimestampType.CREATE_TIME, 1L);
         builder.append(11L, "1".getBytes(), "b".getBytes());
         builder.append(12L, null, "c".getBytes());
         builder.close();
 
-        builder = MemoryRecords.builder(buffer, magic, compression, TimestampType.CREATE_TIME, 3L);
+        builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, magic, compression, TimestampType.CREATE_TIME, 3L);
         builder.append(13L, null, "d".getBytes());
         builder.append(20L, "4".getBytes(), "e".getBytes());
         builder.append(15L, "5".getBytes(), "f".getBytes());
         builder.close();
 
-        builder = MemoryRecords.builder(buffer, magic, compression, TimestampType.CREATE_TIME, 6L);
+        builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, magic, compression, TimestampType.CREATE_TIME, 6L);
         builder.append(16L, "6".getBytes(), "g".getBytes());
         builder.close();
 
@@ -809,18 +809,18 @@ public class MemoryRecordsTest {
         long logAppendTime = System.currentTimeMillis();
 
         ByteBuffer buffer = ByteBuffer.allocate(2048);
-        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, magic, compression,
+        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, magic, compression,
                 TimestampType.LOG_APPEND_TIME, 0L, logAppendTime, pid, epoch, firstSequence);
         builder.append(10L, null, "a".getBytes());
         builder.close();
 
-        builder = MemoryRecords.builder(buffer, magic, compression, TimestampType.LOG_APPEND_TIME, 1L, logAppendTime,
+        builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, magic, compression, TimestampType.LOG_APPEND_TIME, 1L, logAppendTime,
                 pid, epoch, firstSequence);
         builder.append(11L, "1".getBytes(), "b".getBytes());
         builder.append(12L, null, "c".getBytes());
         builder.close();
 
-        builder = MemoryRecords.builder(buffer, magic, compression, TimestampType.LOG_APPEND_TIME, 3L, logAppendTime,
+        builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, magic, compression, TimestampType.LOG_APPEND_TIME, 3L, logAppendTime,
                 pid, epoch, firstSequence);
         builder.append(13L, null, "d".getBytes());
         builder.append(14L, "4".getBytes(), "e".getBytes());
@@ -853,7 +853,7 @@ public class MemoryRecordsTest {
         assumeAtLeastV2OrNotZstd();
 
         ByteBuffer buffer = ByteBuffer.allocate(2048);
-        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, magic, compression,
+        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, magic, compression,
                 TimestampType.LOG_APPEND_TIME, 0L, logAppendTime, pid, epoch, firstSequence);
         builder.append(10L, null, "abc".getBytes());
         builder.close();

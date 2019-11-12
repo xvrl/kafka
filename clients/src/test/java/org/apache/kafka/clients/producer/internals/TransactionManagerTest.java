@@ -39,6 +39,7 @@ import org.apache.kafka.common.message.InitProducerIdResponseData;
 import org.apache.kafka.common.metrics.MetricConfig;
 import org.apache.kafka.common.metrics.Metrics;
 import org.apache.kafka.common.protocol.Errors;
+import org.apache.kafka.common.record.BufferSupplier;
 import org.apache.kafka.common.record.CompressionType;
 import org.apache.kafka.common.record.MemoryRecords;
 import org.apache.kafka.common.record.MemoryRecordsBuilder;
@@ -758,8 +759,8 @@ public class TransactionManagerTest {
     }
 
     private ProducerBatch batchWithValue(TopicPartition tp, String value) {
-        MemoryRecordsBuilder builder = MemoryRecords.builder(ByteBuffer.allocate(64),
-                CompressionType.NONE, TimestampType.CREATE_TIME, 0L);
+        MemoryRecordsBuilder builder = MemoryRecords.builder(ByteBuffer.allocate(64), BufferSupplier.NO_CACHING,
+                                                             CompressionType.NONE, TimestampType.CREATE_TIME, 0L);
         long currentTimeMs = time.milliseconds();
         ProducerBatch batch = new ProducerBatch(tp, builder, currentTimeMs);
         batch.tryAppend(currentTimeMs, new byte[0], value.getBytes(), new Header[0], null, currentTimeMs);

@@ -29,6 +29,7 @@ import org.apache.kafka.common.TopicPartition;
 import org.apache.kafka.common.errors.UnsupportedVersionException;
 import org.apache.kafka.common.metrics.Metrics;
 import org.apache.kafka.common.protocol.ApiKeys;
+import org.apache.kafka.common.record.BufferSupplier;
 import org.apache.kafka.common.record.CompressionRatioEstimator;
 import org.apache.kafka.common.record.CompressionType;
 import org.apache.kafka.common.record.DefaultRecord;
@@ -718,7 +719,7 @@ public class RecordAccumulatorTest {
 
         // Create a big batch
         ByteBuffer buffer = ByteBuffer.allocate(4096);
-        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, CompressionType.NONE, TimestampType.CREATE_TIME, 0L);
+        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, CompressionType.NONE, TimestampType.CREATE_TIME, 0L);
         ProducerBatch batch = new ProducerBatch(tp1, builder, now, true);
 
         byte[] value = new byte[1024];

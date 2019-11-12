@@ -32,12 +32,12 @@ public class ByteBufferLogInputStreamTest {
     @Test
     public void iteratorIgnoresIncompleteEntries() {
         ByteBuffer buffer = ByteBuffer.allocate(1024);
-        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, CompressionType.NONE, TimestampType.CREATE_TIME, 0L);
+        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, CompressionType.NONE, TimestampType.CREATE_TIME, 0L);
         builder.append(15L, "a".getBytes(), "1".getBytes());
         builder.append(20L, "b".getBytes(), "2".getBytes());
         builder.close();
 
-        builder = MemoryRecords.builder(buffer, CompressionType.NONE, TimestampType.CREATE_TIME, 2L);
+        builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, CompressionType.NONE, TimestampType.CREATE_TIME, 2L);
         builder.append(30L, "c".getBytes(), "3".getBytes());
         builder.append(40L, "d".getBytes(), "4".getBytes());
         builder.close();
@@ -57,14 +57,14 @@ public class ByteBufferLogInputStreamTest {
     @Test(expected = CorruptRecordException.class)
     public void iteratorRaisesOnTooSmallRecords() {
         ByteBuffer buffer = ByteBuffer.allocate(1024);
-        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, CompressionType.NONE, TimestampType.CREATE_TIME, 0L);
+        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, CompressionType.NONE, TimestampType.CREATE_TIME, 0L);
         builder.append(15L, "a".getBytes(), "1".getBytes());
         builder.append(20L, "b".getBytes(), "2".getBytes());
         builder.close();
 
         int position = buffer.position();
 
-        builder = MemoryRecords.builder(buffer, CompressionType.NONE, TimestampType.CREATE_TIME, 2L);
+        builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, CompressionType.NONE, TimestampType.CREATE_TIME, 2L);
         builder.append(30L, "c".getBytes(), "3".getBytes());
         builder.append(40L, "d".getBytes(), "4".getBytes());
         builder.close();
@@ -80,14 +80,14 @@ public class ByteBufferLogInputStreamTest {
     @Test(expected = CorruptRecordException.class)
     public void iteratorRaisesOnInvalidMagic() {
         ByteBuffer buffer = ByteBuffer.allocate(1024);
-        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, CompressionType.NONE, TimestampType.CREATE_TIME, 0L);
+        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, CompressionType.NONE, TimestampType.CREATE_TIME, 0L);
         builder.append(15L, "a".getBytes(), "1".getBytes());
         builder.append(20L, "b".getBytes(), "2".getBytes());
         builder.close();
 
         int position = buffer.position();
 
-        builder = MemoryRecords.builder(buffer, CompressionType.NONE, TimestampType.CREATE_TIME, 2L);
+        builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, CompressionType.NONE, TimestampType.CREATE_TIME, 2L);
         builder.append(30L, "c".getBytes(), "3".getBytes());
         builder.append(40L, "d".getBytes(), "4".getBytes());
         builder.close();
@@ -103,12 +103,12 @@ public class ByteBufferLogInputStreamTest {
     @Test(expected = CorruptRecordException.class)
     public void iteratorRaisesOnTooLargeRecords() {
         ByteBuffer buffer = ByteBuffer.allocate(1024);
-        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, CompressionType.NONE, TimestampType.CREATE_TIME, 0L);
+        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, CompressionType.NONE, TimestampType.CREATE_TIME, 0L);
         builder.append(15L, "a".getBytes(), "1".getBytes());
         builder.append(20L, "b".getBytes(), "2".getBytes());
         builder.close();
 
-        builder = MemoryRecords.builder(buffer, CompressionType.NONE, TimestampType.CREATE_TIME, 2L);
+        builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, CompressionType.NONE, TimestampType.CREATE_TIME, 2L);
         builder.append(30L, "c".getBytes(), "3".getBytes());
         builder.append(40L, "d".getBytes(), "4".getBytes());
         builder.close();

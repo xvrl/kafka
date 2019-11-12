@@ -233,7 +233,7 @@ public class FetcherTest {
         subscriptions.seek(tp0, 0);
 
         ByteBuffer buffer = ByteBuffer.allocate(1024);
-        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, RecordBatch.MAGIC_VALUE_V0,
+        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, RecordBatch.MAGIC_VALUE_V0,
                 CompressionType.NONE, TimestampType.CREATE_TIME, 0L, System.currentTimeMillis(),
                 RecordBatch.NO_PARTITION_LEADER_EPOCH);
         builder.append(0L, "key".getBytes(), "1".getBytes());
@@ -266,7 +266,7 @@ public class FetcherTest {
         Integer partitionLeaderEpoch = 1;
 
         ByteBuffer buffer = ByteBuffer.allocate(1024);
-        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, RecordBatch.CURRENT_MAGIC_VALUE,
+        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, RecordBatch.CURRENT_MAGIC_VALUE,
                 CompressionType.NONE, TimestampType.CREATE_TIME, 0L, System.currentTimeMillis(),
                 partitionLeaderEpoch);
         builder.append(0L, "key".getBytes(), partitionLeaderEpoch.toString().getBytes());
@@ -275,13 +275,13 @@ public class FetcherTest {
 
         partitionLeaderEpoch += 7;
 
-        builder = MemoryRecords.builder(buffer, RecordBatch.CURRENT_MAGIC_VALUE, CompressionType.NONE,
+        builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, RecordBatch.CURRENT_MAGIC_VALUE, CompressionType.NONE,
                 TimestampType.CREATE_TIME, 2L, System.currentTimeMillis(), partitionLeaderEpoch);
         builder.append(0L, "key".getBytes(), partitionLeaderEpoch.toString().getBytes());
         builder.close();
 
         partitionLeaderEpoch += 5;
-        builder = MemoryRecords.builder(buffer, RecordBatch.CURRENT_MAGIC_VALUE, CompressionType.NONE,
+        builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, RecordBatch.CURRENT_MAGIC_VALUE, CompressionType.NONE,
                 TimestampType.CREATE_TIME, 3L, System.currentTimeMillis(), partitionLeaderEpoch);
         builder.append(0L, "key".getBytes(), partitionLeaderEpoch.toString().getBytes());
         builder.append(0L, "key".getBytes(), partitionLeaderEpoch.toString().getBytes());
@@ -362,7 +362,7 @@ public class FetcherTest {
         int partitionLeaderEpoch = 0;
 
         ByteBuffer buffer = ByteBuffer.allocate(1024);
-        MemoryRecordsBuilder builder = MemoryRecords.idempotentBuilder(buffer, CompressionType.NONE, 0L, producerId,
+        MemoryRecordsBuilder builder = MemoryRecords.idempotentBuilder(buffer, BufferSupplier.NO_CACHING, CompressionType.NONE, 0L, producerId,
                 producerEpoch, baseSequence);
         builder.append(0L, "key".getBytes(), null);
         builder.close();
@@ -558,6 +558,7 @@ public class FetcherTest {
         ByteBufferOutputStream out = new ByteBufferOutputStream(buffer);
 
         MemoryRecordsBuilder builder = new MemoryRecordsBuilder(out,
+                                                                BufferSupplier.NO_CACHING,
                                                                 DefaultRecordBatch.CURRENT_MAGIC_VALUE,
                                                                 CompressionType.NONE,
                                                                 TimestampType.CREATE_TIME,
@@ -623,7 +624,7 @@ public class FetcherTest {
     public void testHeaders() {
         buildFetcher();
 
-        MemoryRecordsBuilder builder = MemoryRecords.builder(ByteBuffer.allocate(1024), CompressionType.NONE, TimestampType.CREATE_TIME, 1L);
+        MemoryRecordsBuilder builder = MemoryRecords.builder(ByteBuffer.allocate(1024), BufferSupplier.NO_CACHING, CompressionType.NONE, TimestampType.CREATE_TIME, 1L);
         builder.append(0L, "key".getBytes(), "value-1".getBytes());
 
         Header[] headersArray = new Header[1];
@@ -748,7 +749,7 @@ public class FetcherTest {
         // this test verifies the fetcher updates the current fetched/consumed positions correctly for this case
         buildFetcher();
 
-        MemoryRecordsBuilder builder = MemoryRecords.builder(ByteBuffer.allocate(1024), CompressionType.NONE,
+        MemoryRecordsBuilder builder = MemoryRecords.builder(ByteBuffer.allocate(1024), BufferSupplier.NO_CACHING, CompressionType.NONE,
                 TimestampType.CREATE_TIME, 0L);
         builder.appendWithOffset(15L, 0L, "key".getBytes(), "value-1".getBytes());
         builder.appendWithOffset(20L, 0L, "key".getBytes(), "value-2".getBytes());
@@ -2063,7 +2064,7 @@ public class FetcherTest {
         assertEquals(100, (Double) partitionLag.metricValue(), EPSILON);
 
         // recordsFetchLagMax should be hw - offset of the last message after receiving a non-empty FetchResponse
-        MemoryRecordsBuilder builder = MemoryRecords.builder(ByteBuffer.allocate(1024), CompressionType.NONE,
+        MemoryRecordsBuilder builder = MemoryRecords.builder(ByteBuffer.allocate(1024), BufferSupplier.NO_CACHING, CompressionType.NONE,
                 TimestampType.CREATE_TIME, 0L);
         for (int v = 0; v < 3; v++)
             builder.appendWithOffset(v, RecordBatch.NO_TIMESTAMP, "key".getBytes(), ("value-" + v).getBytes());
@@ -2104,7 +2105,7 @@ public class FetcherTest {
         assertEquals(0L, (Double) partitionLead.metricValue(), EPSILON);
 
         // recordsFetchLeadMin should be position - logStartOffset after receiving a non-empty FetchResponse
-        MemoryRecordsBuilder builder = MemoryRecords.builder(ByteBuffer.allocate(1024), CompressionType.NONE,
+        MemoryRecordsBuilder builder = MemoryRecords.builder(ByteBuffer.allocate(1024), BufferSupplier.NO_CACHING, CompressionType.NONE,
                 TimestampType.CREATE_TIME, 0L);
         for (int v = 0; v < 3; v++) {
             builder.appendWithOffset(v, RecordBatch.NO_TIMESTAMP, "key".getBytes(), ("value-" + v).getBytes());
@@ -2148,7 +2149,7 @@ public class FetcherTest {
         assertEquals(50, (Double) partitionLag.metricValue(), EPSILON);
 
         // recordsFetchLagMax should be lso - offset of the last message after receiving a non-empty FetchResponse
-        MemoryRecordsBuilder builder = MemoryRecords.builder(ByteBuffer.allocate(1024), CompressionType.NONE,
+        MemoryRecordsBuilder builder = MemoryRecords.builder(ByteBuffer.allocate(1024), BufferSupplier.NO_CACHING, CompressionType.NONE,
                 TimestampType.CREATE_TIME, 0L);
         for (int v = 0; v < 3; v++)
             builder.appendWithOffset(v, RecordBatch.NO_TIMESTAMP, "key".getBytes(), ("value-" + v).getBytes());
@@ -2184,7 +2185,7 @@ public class FetcherTest {
         for (TopicPartition tp : Utils.mkSet(tp1, tp2)) {
             subscriptions.seek(tp, 0);
 
-            MemoryRecordsBuilder builder = MemoryRecords.builder(ByteBuffer.allocate(1024), CompressionType.NONE,
+            MemoryRecordsBuilder builder = MemoryRecords.builder(ByteBuffer.allocate(1024), BufferSupplier.NO_CACHING, CompressionType.NONE,
                     TimestampType.CREATE_TIME, 0L);
             for (int v = 0; v < 3; v++)
                 builder.appendWithOffset(v, RecordBatch.NO_TIMESTAMP, "key".getBytes(), ("value-" + v).getBytes());
@@ -2222,7 +2223,7 @@ public class FetcherTest {
         KafkaMetric fetchSizeAverage = allMetrics.get(metrics.metricInstance(metricsRegistry.fetchSizeAvg));
         KafkaMetric recordsCountAverage = allMetrics.get(metrics.metricInstance(metricsRegistry.recordsPerRequestAvg));
 
-        MemoryRecordsBuilder builder = MemoryRecords.builder(ByteBuffer.allocate(1024), CompressionType.NONE,
+        MemoryRecordsBuilder builder = MemoryRecords.builder(ByteBuffer.allocate(1024), BufferSupplier.NO_CACHING, CompressionType.NONE,
                 TimestampType.CREATE_TIME, 0L);
         for (int v = 0; v < 3; v++)
             builder.appendWithOffset(v, RecordBatch.NO_TIMESTAMP, "key".getBytes(), ("value-" + v).getBytes());
@@ -2250,7 +2251,7 @@ public class FetcherTest {
         KafkaMetric fetchSizeAverage = allMetrics.get(metrics.metricInstance(metricsRegistry.fetchSizeAvg));
         KafkaMetric recordsCountAverage = allMetrics.get(metrics.metricInstance(metricsRegistry.recordsPerRequestAvg));
 
-        MemoryRecordsBuilder builder = MemoryRecords.builder(ByteBuffer.allocate(1024), CompressionType.NONE,
+        MemoryRecordsBuilder builder = MemoryRecords.builder(ByteBuffer.allocate(1024), BufferSupplier.NO_CACHING, CompressionType.NONE,
                 TimestampType.CREATE_TIME, 0L);
         for (int v = 0; v < 3; v++)
             builder.appendWithOffset(v, RecordBatch.NO_TIMESTAMP, "key".getBytes(), ("value-" + v).getBytes());
@@ -2292,7 +2293,7 @@ public class FetcherTest {
         assertEquals(1, fetcher.sendFetches());
         subscriptions.seek(tp1, 5);
 
-        MemoryRecordsBuilder builder = MemoryRecords.builder(ByteBuffer.allocate(1024), CompressionType.NONE,
+        MemoryRecordsBuilder builder = MemoryRecords.builder(ByteBuffer.allocate(1024), BufferSupplier.NO_CACHING, CompressionType.NONE,
                 TimestampType.CREATE_TIME, 0L);
         for (int v = 0; v < 3; v++)
             builder.appendWithOffset(v, RecordBatch.NO_TIMESTAMP, "key".getBytes(), ("value-" + v).getBytes());
@@ -3289,14 +3290,14 @@ public class FetcherTest {
     }
 
     private MemoryRecords buildRecords(long baseOffset, int count, long firstMessageId) {
-        MemoryRecordsBuilder builder = MemoryRecords.builder(ByteBuffer.allocate(1024), CompressionType.NONE, TimestampType.CREATE_TIME, baseOffset);
+        MemoryRecordsBuilder builder = MemoryRecords.builder(ByteBuffer.allocate(1024), BufferSupplier.NO_CACHING, CompressionType.NONE, TimestampType.CREATE_TIME, baseOffset);
         for (int i = 0; i < count; i++)
             builder.append(0L, "key".getBytes(), ("value-" + (firstMessageId + i)).getBytes());
         return builder.build();
     }
 
     private int appendTransactionalRecords(ByteBuffer buffer, long pid, long baseOffset, int baseSequence, SimpleRecord... records) {
-        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, RecordBatch.CURRENT_MAGIC_VALUE, CompressionType.NONE,
+        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, RecordBatch.CURRENT_MAGIC_VALUE, CompressionType.NONE,
                 TimestampType.CREATE_TIME, baseOffset, time.milliseconds(), pid, (short) 0, baseSequence, true,
                 RecordBatch.NO_PARTITION_LEADER_EPOCH);
 
@@ -3409,6 +3410,7 @@ public class FetcherTest {
         // Create some records that include a leader epoch (1)
         MemoryRecordsBuilder builder = MemoryRecords.builder(
                 ByteBuffer.allocate(1024),
+                BufferSupplier.NO_CACHING,
                 RecordBatch.CURRENT_MAGIC_VALUE,
                 CompressionType.NONE,
                 TimestampType.CREATE_TIME,
@@ -3630,6 +3632,7 @@ public class FetcherTest {
         // Create some records that include a leader epoch (1)
         MemoryRecordsBuilder builder = MemoryRecords.builder(
                 ByteBuffer.allocate(1024),
+                BufferSupplier.NO_CACHING,
                 RecordBatch.CURRENT_MAGIC_VALUE,
                 CompressionType.NONE,
                 TimestampType.CREATE_TIME,

@@ -429,7 +429,7 @@ public class FileRecordsTest {
                                               long offset,
                                               int leaderEpoch) throws IOException {
         ByteBuffer buffer = ByteBuffer.allocate(128);
-        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, recordVersion.value,
+        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, recordVersion.value,
                 CompressionType.NONE, TimestampType.CREATE_TIME, offset, timestamp, leaderEpoch);
         builder.append(new SimpleRecord(timestamp, new byte[0], new byte[0]));
         fileRecords.append(builder.build());
@@ -454,7 +454,7 @@ public class FileRecordsTest {
         // create MemoryRecords
         ByteBuffer buffer = ByteBuffer.allocate(8000);
         for (int i = 0; i < records.size(); i++) {
-            MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, magic.get(i), compressionType, TimestampType.CREATE_TIME, 0L);
+            MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, magic.get(i), compressionType, TimestampType.CREATE_TIME, 0L);
             builder.appendWithOffset(offsets.get(i), records.get(i));
             builder.close();
         }
@@ -499,19 +499,19 @@ public class FileRecordsTest {
         assertEquals("incorrect test setup", offsets.size(), records.size());
 
         ByteBuffer buffer = ByteBuffer.allocate(1024);
-        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, RecordBatch.MAGIC_VALUE_V0, compressionType,
+        MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, RecordBatch.MAGIC_VALUE_V0, compressionType,
                 TimestampType.CREATE_TIME, 0L);
         for (int i = 0; i < 3; i++)
             builder.appendWithOffset(offsets.get(i), records.get(i));
         builder.close();
 
-        builder = MemoryRecords.builder(buffer, RecordBatch.MAGIC_VALUE_V1, compressionType, TimestampType.CREATE_TIME,
+        builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, RecordBatch.MAGIC_VALUE_V1, compressionType, TimestampType.CREATE_TIME,
                 0L);
         for (int i = 3; i < 6; i++)
             builder.appendWithOffset(offsets.get(i), records.get(i));
         builder.close();
 
-        builder = MemoryRecords.builder(buffer, RecordBatch.MAGIC_VALUE_V2, compressionType, TimestampType.CREATE_TIME, 0L);
+        builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, RecordBatch.MAGIC_VALUE_V2, compressionType, TimestampType.CREATE_TIME, 0L);
         for (int i = 6; i < 10; i++)
             builder.appendWithOffset(offsets.get(i), records.get(i));
         builder.close();
@@ -636,7 +636,7 @@ public class FileRecordsTest {
         long offset = 0L;
         for (byte[] value : values) {
             ByteBuffer buffer = ByteBuffer.allocate(128);
-            MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, RecordBatch.CURRENT_MAGIC_VALUE,
+            MemoryRecordsBuilder builder = MemoryRecords.builder(buffer, BufferSupplier.NO_CACHING, RecordBatch.CURRENT_MAGIC_VALUE,
                     CompressionType.NONE, TimestampType.CREATE_TIME, offset);
             builder.appendWithOffset(offset++, System.currentTimeMillis(), null, value);
             fileRecords.append(builder.build());

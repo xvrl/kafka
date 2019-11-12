@@ -333,6 +333,7 @@ public class KafkaLZ4Test {
         ByteBufferOutputStream output = new ByteBufferOutputStream(1024);
         KafkaLZ4BlockOutputStream lz4 = new KafkaLZ4BlockOutputStream(
             output,
+            BufferSupplier.create(),
             KafkaLZ4BlockOutputStream.BLOCKSIZE_64KB,
             blockChecksum,
             useBrokenFlagDescriptorChecksum
